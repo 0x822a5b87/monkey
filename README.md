@@ -3,6 +3,14 @@
 >
 > In this repository, I am going to build my own lexer, my own parser, my own tree representation and my own evaluator.
 
+## install
+
+```bash
+go work init interpreter/
+
+go work sync
+```
+
 ## summary
 
 the language is called `Monkey` and has the following features：
@@ -31,7 +39,7 @@ let myArray = [1, 2, 3, 4, ,5];
 let thorsten = {"name": "Thorsten", "age": 28};
 
 // accessing the elements in arrays and hashes is done with index expression
-let intValu = myArray[0]
+let intValue = myArray[0]
 let name = thorsten["name"]
 
 // the let statements can also be used to bind functions to names
@@ -49,11 +57,11 @@ let fibonacci = fn(x) {
   if (x == 0) {
     return 0
   }
-  
+
   if (x == 1) {
     return 1
   }
-  
+
   return fibonacci(x - 1) + fibonacci(x - 2);
 };
 
@@ -71,7 +79,7 @@ twice(addTwo, 2);
 
 ## module
 
-the interpretor will have a few major parts:
+the interpreter will have a few major parts:
 
 - the lexer
 - the parser
