@@ -1,5 +1,6 @@
-# interpreter-go
-> **writing an interpreter in Go**
+# monkey
+
+> **writing an interpreter/compiler in Go**
 >
 > In this repository, I am going to build my own lexer, my own parser, my own tree representation and my own evaluator.
 
