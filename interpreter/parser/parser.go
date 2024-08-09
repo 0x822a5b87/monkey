@@ -48,6 +48,10 @@ func (p *Parser) ParseProgram() *ast.Program {
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)
 		}
+
+		// each time we parse a statement, we DO NOT skip the last token of the statement, normally is a semicolon
+		// instead of, we skip the last token in current for loop due to avoid infinite loop
+		p.nextToken()
 	}
 
 	return program
@@ -58,6 +62,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.RETURN:
+		return p.parseReturnStatement()
 	default:
 		return nil
 	}
@@ -81,10 +87,17 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		p.nextToken()
 	}
 
-	// skip semicolon
-	p.nextToken()
-
 	return letStmt
+}
+
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	returnStatement := &ast.ReturnStatement{Token: p.currToken}
+	p.nextToken()
+	// TODO parse expression as return statement's value
+	for !p.currTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+	return returnStatement
 }
 
 func (p *Parser) currTokenIs(tokenType token.TokenType) bool {

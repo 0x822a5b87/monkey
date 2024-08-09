@@ -252,5 +252,101 @@ function parseExpression() {
 Again, we're starting a test before we flesh out *ParseProgram*.Here is a test case to make sure that the parsing of let statements works:
 
 ```go
+func TestParseProgram(t *testing.T) {
+	input := `
+let x = 5;
+let y = 10;
+
+let foo_bar = 510;
+`
+	l := lexer.NewLexer(input)
+	p := NewParser(*l)
+	program := p.ParseProgram()
+
+	if program == nil {
+		t.Fatal("ParseProgram return nil")
+	}
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements does not contain 3 statements. got %d", len(program.Statements))
+	}
+
+	expectedStatements := []struct {
+		expectedIdentifier string
+	}{
+		{"x"},
+		{"y"},
+		{"foo_bar"},
+	}
+
+	for i, expectedStatement := range expectedStatements {
+		stmt := program.Statements[i]
+		if !testLetStatement(t, stmt, expectedStatement.expectedIdentifier) {
+			t.Fatalf("line [%d], expected [%s], got [%s]", i, expectedStatement.expectedIdentifier, stmt.TokenLiteral())
+		}
+	}
+}
+
+func testLetStatement(t *testing.T, stmt ast.Statement, name string) bool {
+	if stmt.TokenLiteral() != "let" {
+		t.Errorf("letStmt.TokenLiteral() not 'let', got [%s]", stmt.TokenLiteral())
+	}
+
+	letStmt, ok := stmt.(*ast.LetStatement)
+	if !ok {
+		t.Errorf("stmt not *ast.LetStatement, got = %T", stmt)
+	}
+
+	if letStmt.Name.Value != name {
+		t.Errorf("letStmt.Name.Value != name, expected [%s], got [%s]", name, letStmt.Name.Value)
+	}
+
+	if letStmt.Name.TokenLiteral() != name {
+		t.Errorf("letStmt.Name.TokenLiteral() != name, expected [%s], got [%s]", name, letStmt.Name.TokenLiteral())
+	}
+
+	return true
+}
+```
+
+## 2.5 - Parsing Return Statements
+
+Here is wht return statements look like in monkey:
+
+```javascript
+// return literal value
+return 5;
+
+// return identifier
+return x;
+
+// return function
+return add;
+
+// return expression
+return 10 + 5;
+return add(15);
+```
+
+Experienced with let statements, we can easily spot the structure behind these statements:
+
+```mermaid
+flowchart LR
+	return:::literal --> expression[&lt;expression&gt;]
+
+classDef literal fill:#f9f,stroke:#333,stroke-width:4px;
+```
+
+```go
+type ReturnStatement struct {
+	Token       token.Token
+	ReturnValue *Expression
+}
+
+func (r *ReturnStatement) TokenLiteral() string {
+	return r.Token.Literal
+}
+
+func (r *ReturnStatement) statementNode() {}
 ```
 

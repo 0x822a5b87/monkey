@@ -53,6 +53,11 @@ type LetStatement struct {
 	Value Expression  // Value expression represent the right side of the
 }
 
+type ReturnStatement struct {
+	Token       token.Token
+	ReturnValue *Expression
+}
+
 func (identifier *Identifier) expressionNode() {}
 
 func (identifier *Identifier) TokenLiteral() string {
@@ -64,3 +69,9 @@ func (ls *LetStatement) statementNode() {}
 func (ls *LetStatement) TokenLiteral() string {
 	return ls.Token.Literal
 }
+
+func (r *ReturnStatement) TokenLiteral() string {
+	return r.Token.Literal
+}
+
+func (r *ReturnStatement) statementNode() {}
