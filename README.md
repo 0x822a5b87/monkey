@@ -87,3 +87,41 @@ the interpreter will have a few major parts:
 - the Abstract Syntax Tree(AST)
 - the internal object system
 - the evaluator
+
+## interpreter
+
+```mermaid
+mindmap
+  root((monkey))
+    token
+    	Identifier
+    	Operator
+    	Delimiters
+    	Preserved Keywords
+    ast{{ast}}
+    	Node
+    		Program["**Program**
+    			Program is the **root** of our program."]
+    		Statement["**Statement**
+    		combine **Node**, has a statementNode() method to speicify a Node is a Statement"]
+    			LetStatement
+    			ReturnStatement
+    		Expression["**Expression**
+    		combine **Node**, has a expressionNode() method to speicify a Node is a Expression"]
+    			Identifier
+    			ExpressionStatement
+    lexer
+    	NextToken["NextToken()
+    	get next token from source code according current char and peek char"]
+    	readChar["readChar()"]
+    	peakChar["peakChar()"]
+    parser
+    	Top Down Operator Precedence
+    	ParseProgram["ParseProgram()"]
+    	BNF/EBNF
+    	Pratt Parser
+    		prefix operator
+    		infix operator
+    		sufix operator
+```
+
