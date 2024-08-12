@@ -350,3 +350,191 @@ func (r *ReturnStatement) TokenLiteral() string {
 func (r *ReturnStatement) statementNode() {}
 ```
 
+## 2.6 - Pasing Expressions
+
+As we just saw,parsing statements is relatively straightforward.We process tokens from **left to right**,except or reject the next tokens and if anything fits we return an AST node.
+
+Parsing Expressions,on the other hands,contains a few more challenge.**Operator precedence** is probably the first one that comes to mind and is best illustrated with a example.Lets say we want to parse the following arithmetic expressions:
+
+```go
+5 * 5 + 10
+```
+
+what we want here is an AST that represents hte expression like this:
+
+```go
+((5 * 5) + 10)
+```
+
+In order to produce an AST that looks like this, the parser has to know about operator precedences where the precedence of `*` is higher than `+`.
+
+
+
+Here is another typical example:
+
+```go
+5 * (5 + 10)
+```
+
+Here the parenthesis group together the `5 + 10` expression and give them a **"precedence bump"**: the addition now has to be evaluated before the multiplication.
+
+The other big challenge is that in expressions tokens of the same type can appear in multiple position.
+
+```go
+// negative number in expression
+let x = -10 + 10
+
+// function in expression
+let y = 5 + add(5, 5) * 10
+```
+
+### Expression in monkey
+
+> In the monkey programming language everything besides *let* and *return* statements is an expression.These expressions come in differencet varieties.
+
+```javascript
+let negative = -1
+let falseExpression = false
+let falseExpression1 = !true
+
+let addExpression = 5 + 5
+let subExpression = 5 - 5
+let mulExpression = 5 * 5
+let divExpression = 5 / 5
+
+// comparision operators
+foo = bar
+foo != bar
+foo < bar
+foo > bar
+
+// call expressions
+add(2, 3)
+add(add(2, 3), add(5, 10))
+max(5, add(5 * 5))
+
+// identifiers are expression too
+foo * bar / foo_bar
+add(foo, bar)
+```
+
+**functions in monkey are first-class citizens and, yes, function literals are expressions too.**We can use a let statement to bind a function to a name.The function literal is just the expression in the statement:
+
+```javascript
+let add = fn(x, y) {
+  return x + y;
+};
+```
+
+### Top Down Operator Precedence(or: Pratt Parsing)
+
+Top Down Operator Precedence  was invented as an alternative to parsers based on context-free grammars and the BNF.
+
+ANd that is also the main difference: instead of associating parsing `functions` with `grammer rules`, Pratt associates these functions(which he calls "semantic code") with single token types.**A crucial part of the idea is that each token type can have two parsing functions associated with it, depending on the tokens's position** - `infix` or `prefix`
+
+- functions : think of our **parseLetStatement ** method here
+- grammer ruls : defined in BNF or EBNF
+
+### Terminology
+
+> A **prefix operator** is an operator "in front of" its operand
+
+```javascript
+--5
+```
+
+> A **posifix operator** is an operator "after" its operand
+
+```javascript
+foo_bar++
+```
+
+> A **infix operator** are something we've all seen before. An infix operator sits between its operands
+
+```js
+let x = 5 * 8;
+```
+
+### Preparing the AST
+
+An expression statement is not really a distinct statement; it's a statement that consists solely of one expression.It's only a wrapper, we need it because it's totally legal in monkey to write the follow code:
+
+```js
+let x = 5;
+
+// expression statement
+x + 10;
+```
+
+we add a String() method to Node for the purpose of debugging
+
+```go
+type Node interface {
+	TokenLiteral() string
+	String() string
+}
+
+func (p *Program) String() string {
+	buffer := bytes.Buffer{}
+	for _, stmt := range p.Statements {
+		buffer.WriteString(stmt.String())
+	}
+	return buffer.String()
+}
+```
+
+The "real work" happens in the String() method of our three statement types:
+
+```go
+func (ls *LetStatement) String() string {
+	return fmt.Sprintf("%s %s = %s;", ls.Token.Literal, ls.Name.String(), ls.Value.String())
+}
+
+func (r *ReturnStatement) String() string {
+	var returnValue = ""
+	if r.ReturnValue != nil {
+		returnValue = r.ReturnValue.String()
+	}
+
+	return fmt.Sprintf("%s %s;", r.Token.Literal, returnValue)
+}
+
+func (e *ExpressionStatement) String() string {
+	if e.Expr != nil {
+		return e.Expr.String()
+	}
+	return ""
+}
+```
+
+and we can write the following test code:
+
+```go
+func TestLetStatementString(t *testing.T) {
+	program := Program{Statements: []Statement{
+		&LetStatement{
+			Token: token.Token{Type: token.LET, Literal: "let"},
+			Name: &Identifier{
+				Token: token.Token{Type: token.IDENTIFIER, Literal: "myVar"},
+				Value: "myVar",
+			},
+			Value: &Identifier{
+				Token: token.Token{Type: token.IDENTIFIER, Literal: "anotherVar"},
+				Value: "anotherVar",
+			},
+		},
+	}}
+
+	expectedString := `let myVar = anotherVar;`
+
+	if program.String() != expectedString {
+		t.Fatalf("expected [%s], got [%s]", expectedString, program.String())
+	}
+}
+```
+
+### Implementing the Pratt Parser
+
+A Pratt Parser's main idea is the association of parsing functions with token types, and the parsing function is also called "semantic code".
+
+Whenever this token type is encountered,the parsing functions are called to parse the appropriate expression and return a AST node that represent it.Each token type can have up to two parsing functions associated with it,depending on whether the token is found in a prefix or an infix position.

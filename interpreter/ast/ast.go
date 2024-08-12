@@ -1,6 +1,10 @@
 package ast
 
-import "0x822a5b87/monkey/token"
+import (
+	"0x822a5b87/monkey/token"
+	"bytes"
+	"fmt"
+)
 
 // Node every node in our AST has to implement the Node interface
 // meaning it has to provide a TokenLiteral() function that returns the literal value of the token it's associated with.
@@ -8,6 +12,7 @@ import "0x822a5b87/monkey/token"
 // The AST we are going to construct consists solely of Nodes that are connected to each other.
 type Node interface {
 	TokenLiteral() string
+	String() string // String convert Node to code as string
 }
 
 // Statement a statement is a complete unit of execution in a program.
@@ -16,7 +21,7 @@ type Node interface {
 // Statement DO NOT produce value.
 type Statement interface {
 	Node
-	statementNode()
+	statementNode() // statementNode a Node implement this method to specify itself is a Statement
 }
 
 // Expression an expression is a combination of variables, constants, operators, and functions that are evaluated to produce a value.
@@ -25,13 +30,38 @@ type Statement interface {
 // Expression produce value.
 type Expression interface {
 	Node
-	expressionNode()
+	expressionNode() // expressionNode a Node implement this method to specify itself is an Expression
 }
 
 // Program the program node is going to be the root node of every AST our parser produced.
 // every valid monkey program is a serials of  statements.
 type Program struct {
 	Statements []Statement
+}
+
+// Identifier note that identifier is an Expression
+type Identifier struct {
+	Token token.Token
+	Value string
+}
+
+type LetStatement struct {
+	Token token.Token
+	Name  *Identifier // Name the name of variable
+	Value Expression  // Value expression represent the right side of the let statement
+}
+
+type ReturnStatement struct {
+	Token       token.Token
+	ReturnValue Expression
+}
+
+// ExpressionStatement we need it because it's totally legal in monkey to write the following code:
+// let x = 10;
+// x + 10;
+type ExpressionStatement struct {
+	Token token.Token
+	Expr  Expression
 }
 
 func (p *Program) TokenLiteral() string {
@@ -42,20 +72,12 @@ func (p *Program) TokenLiteral() string {
 	}
 }
 
-type Identifier struct {
-	Token token.Token
-	Value string
-}
-
-type LetStatement struct {
-	Token token.Token
-	Name  *Identifier // Name the name of variable
-	Value Expression  // Value expression represent the right side of the
-}
-
-type ReturnStatement struct {
-	Token       token.Token
-	ReturnValue *Expression
+func (p *Program) String() string {
+	buffer := bytes.Buffer{}
+	for _, stmt := range p.Statements {
+		buffer.WriteString(stmt.String())
+	}
+	return buffer.String()
 }
 
 func (identifier *Identifier) expressionNode() {}
@@ -64,14 +86,44 @@ func (identifier *Identifier) TokenLiteral() string {
 	return identifier.Token.Literal
 }
 
+func (identifier *Identifier) String() string {
+	return identifier.Value
+}
+
 func (ls *LetStatement) statementNode() {}
 
 func (ls *LetStatement) TokenLiteral() string {
 	return ls.Token.Literal
 }
 
+func (ls *LetStatement) String() string {
+	return fmt.Sprintf("%s %s = %s;", ls.Token.Literal, ls.Name.String(), ls.Value.String())
+}
+
 func (r *ReturnStatement) TokenLiteral() string {
 	return r.Token.Literal
 }
 
+func (r *ReturnStatement) String() string {
+	var returnValue = ""
+	if r.ReturnValue != nil {
+		returnValue = r.ReturnValue.String()
+	}
+
+	return fmt.Sprintf("%s %s;", r.Token.Literal, returnValue)
+}
+
 func (r *ReturnStatement) statementNode() {}
+
+func (e *ExpressionStatement) TokenLiteral() string {
+	return e.Token.Literal
+}
+
+func (e *ExpressionStatement) expressionNode() {}
+
+func (e *ExpressionStatement) String() string {
+	if e.Expr != nil {
+		return e.Expr.String()
+	}
+	return ""
+}
