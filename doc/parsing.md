@@ -538,3 +538,57 @@ func TestLetStatementString(t *testing.T) {
 A Pratt Parser's main idea is the association of parsing functions with token types, and the parsing function is also called "semantic code".
 
 Whenever this token type is encountered,the parsing functions are called to parse the appropriate expression and return a AST node that represent it.Each token type can have up to two parsing functions associated with it,depending on whether the token is found in a prefix or an infix position.
+
+#### Identifiers
+
+```go
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+```
+
+#### IntegerLiteral
+
+```go
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+func (i *IntegerLiteral) TokenLiteral() string {
+	return i.Token.Literal
+}
+
+func (i *IntegerLiteral) String() string {
+	return fmt.Sprintf("%d;", i.Value)
+}
+
+func (i *IntegerLiteral) expressionNode() {}
+
+func (p *Parser) parseInteger() ast.Expression {
+	integerLiteral := p.currToken.Literal
+	integer, err := strconv.ParseInt(integerLiteral, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return &ast.IntegerLiteral{Token: p.currToken, Value: integer}
+}
+```
+
+#### Prefix Operators
+
+Their are two prefix operators in the monkey programming language: `!` and `-`.The structure of their ussage is the following:
+
+```mermaid
+---
+title: Prefix Operators
+---
+flowchart LR
+	prefix[&lt;prefix operator&gt;] --> expression[&lt;expression&gt;]
+
+classDef literal fill:#f9f,stroke:#333,stroke-width:4px;
+```
+
+
+
+**Any expression can follow a prefix operator as operand.**That means that an AST node for a prefix operator expression has to be flexible enough to point to any expression as its operand.

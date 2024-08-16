@@ -5,18 +5,52 @@ import (
 	"0x822a5b87/monkey/common"
 	"0x822a5b87/monkey/lexer"
 	"0x822a5b87/monkey/token"
+	"fmt"
+	"strconv"
 )
+
+type Precedence int
+
+const (
+	LowestPrecedence      Precedence = 10
+	EqualsPrecedence      Precedence = 20
+	LessGreaterPrecedence Precedence = 30
+	SumPrecedence         Precedence = 40
+	ProductPrecedence     Precedence = 50
+	PrefixPrecedence      Precedence = 60
+	CallPrecedence        Precedence = 70
+)
+
+type prefixParseFn func() ast.Expression
+type infixParseFn func(ast.Expression) ast.Expression // infixParseFn the argument is "left side" of the infix operator which being parsed
 
 type Parser struct {
 	lex       lexer.Lexer
 	currToken token.Token
 	peekToken token.Token
+
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
+
+	precedences map[token.TokenType]Precedence
 }
 
 func NewParser(l lexer.Lexer) *Parser {
 	p := &Parser{
-		lex: l,
+		lex:            l,
+		prefixParseFns: make(map[token.TokenType]prefixParseFn),
+		infixParseFns:  make(map[token.TokenType]infixParseFn),
+		precedences:    make(map[token.TokenType]Precedence),
 	}
+
+	p.precedences[token.INT] = LowestPrecedence
+	p.precedences[token.BANG] = PrefixPrecedence
+	p.precedences[token.SUB] = PrefixPrecedence
+
+	p.registerPrefix(token.IDENTIFIER, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseInteger)
+	p.registerPrefix(token.BANG, p.parsePrefixExpression)
+	p.registerPrefix(token.SUB, p.parsePrefixExpression)
 
 	// call next token twice so that current token and peek token are both set
 	p.nextToken()
@@ -65,7 +99,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -100,12 +134,58 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return returnStatement
 }
 
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.currToken}
+	stmt.Expr = p.parseExpression(LowestPrecedence)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseExpression(precedence Precedence) ast.Expression {
+	// start parse expression from prefix parse function
+	prefixFn := p.getPrefixFn(p.currToken.Type)
+	lhs := prefixFn()
+	for !p.currTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		infixFn := p.getInfixFn(p.currToken.Type)
+		lhs = infixFn(lhs)
+	}
+	return lhs
+}
+
+func (p *Parser) getPrefixFn(tokenType token.TokenType) prefixParseFn {
+	fn, ok := p.prefixParseFns[tokenType]
+	if !ok {
+		panic(fmt.Errorf("prefix parse fn not found for type [%s]", tokenType))
+	}
+	return fn
+}
+
+func (p *Parser) getInfixFn(tokenType token.TokenType) infixParseFn {
+	fn, ok := p.infixParseFns[tokenType]
+	if !ok {
+		panic(fmt.Errorf("infix parse fn not found for type [%s]", tokenType))
+	}
+	return fn
+}
+
 func (p *Parser) currTokenIs(tokenType token.TokenType) bool {
 	return p.currToken.Type == tokenType
 }
 
 func (p *Parser) peekTokenIs(tokenType token.TokenType) bool {
 	return p.peekToken.Type == tokenType
+}
+
+func (p *Parser) getPrecedence(tokenType token.TokenType) Precedence {
+	return p.precedences[tokenType]
+}
+
+func (p *Parser) peekPrecedence() Precedence {
+	return p.getPrecedence(p.nextToken().Type)
 }
 
 // expectPeek step to next token if peek token type matches given token type
@@ -116,4 +196,35 @@ func (p *Parser) expectPeek(tokenType token.TokenType) bool {
 	} else {
 		return false
 	}
+}
+
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
+}
+
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	expr := ast.PrefixExpression{
+		Token:    p.currToken,
+		Operator: p.currToken.Literal,
+	}
+	p.nextToken()
+	expr.Right = p.parseExpression(PrefixPrecedence)
+	return &expr
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+func (p *Parser) parseInteger() ast.Expression {
+	integerLiteral := p.currToken.Literal
+	integer, err := strconv.ParseInt(integerLiteral, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return &ast.IntegerLiteral{Token: p.currToken, Value: integer}
 }

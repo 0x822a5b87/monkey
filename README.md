@@ -125,3 +125,17 @@ mindmap
     		sufix operator
 ```
 
+### Parsing Expression
+
+```mermaid
+---
+title: Pratt Parsing
+---
+mindmap
+	Parsing Expression
+		Identifier
+		IntegerLiteral
+		Prefix Operators
+```
+
+## 
