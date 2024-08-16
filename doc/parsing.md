@@ -535,6 +535,8 @@ func TestLetStatementString(t *testing.T) {
 
 ### Implementing the Pratt Parser
 
+> For more Pratt Parser's detail, you can visit my blog:[一个简单的 Pratt Parser 的实现](https://0x822a5b87.github.io/2024/08/14/%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84-Pratt-Parser-%E7%9A%84%E5%AE%9E%E7%8E%B0/)
+
 A Pratt Parser's main idea is the association of parsing functions with token types, and the parsing function is also called "semantic code".
 
 Whenever this token type is encountered,the parsing functions are called to parse the appropriate expression and return a AST node that represent it.Each token type can have up to two parsing functions associated with it,depending on whether the token is found in a prefix or an infix position.

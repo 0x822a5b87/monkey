@@ -4,6 +4,7 @@ import (
 	"0x822a5b87/monkey/token"
 	"bytes"
 	"fmt"
+	"strconv"
 )
 
 // Node every node in our AST has to implement the Node interface
@@ -151,3 +152,41 @@ func (p *PrefixExpression) String() string {
 }
 
 func (p *PrefixExpression) expressionNode() {}
+
+type InfixExpression struct {
+	Token    token.Token
+	Operator string
+	Lhs      Expression
+	Rhs      Expression
+}
+
+func (infixExpr *InfixExpression) TokenLiteral() string {
+	return infixExpr.Token.Literal
+}
+
+func (infixExpr *InfixExpression) String() string {
+	if infixExpr.Rhs != nil {
+		// for infix expression
+		return fmt.Sprintf("(%s %s %s)", infixExpr.Lhs.String(), infixExpr.Operator, infixExpr.Rhs.String())
+	} else {
+		// for suffix expression, note that we treat suffix expression as a special infix expression
+		return fmt.Sprintf("(%s%s)", infixExpr.Lhs.String(), infixExpr.Operator)
+	}
+}
+
+func (infixExpr *InfixExpression) expressionNode() {}
+
+type BooleanExpression struct {
+	Token token.Token
+	Value bool
+}
+
+func (boolExpr *BooleanExpression) TokenLiteral() string {
+	return boolExpr.Token.Literal
+}
+
+func (boolExpr *BooleanExpression) String() string {
+	return fmt.Sprintf("%s", strconv.FormatBool(boolExpr.Value))
+}
+
+func (boolExpr *BooleanExpression) expressionNode() {}
