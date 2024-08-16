@@ -257,9 +257,10 @@ func (p *Parser) parseInfixOperator(lhs ast.Expression) ast.Expression {
 		Lhs:      lhs,
 	}
 
+	precedence := p.getPrecedence(p.currToken.Type)
 	p.nextToken()
 
-	expr.Rhs = p.parseExpression(LowestPrecedence)
+	expr.Rhs = p.parseExpression(precedence)
 
 	return expr
 }
