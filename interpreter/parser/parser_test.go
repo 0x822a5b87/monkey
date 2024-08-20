@@ -3,7 +3,9 @@ package parser
 import (
 	"0x822a5b87/monkey/ast"
 	"0x822a5b87/monkey/lexer"
+	"0x822a5b87/monkey/token"
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -255,10 +257,185 @@ func TestExpression_ComplexExpression(t *testing.T) {
 	}
 }
 
+func TestOperatorPrecedenceParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"-a * b",
+			"((-a) * b)",
+		},
+		{
+			"!-a",
+			"(!(-a))",
+		},
+		{
+			"a + b + c",
+			"((a + b) + c)",
+		},
+		{
+			"a + b - c",
+			"((a + b) - c)",
+		},
+		{
+			"a * b * c",
+			"((a * b) * c)",
+		},
+		{
+			"a * b / c",
+			"((a * b) / c)",
+		},
+		{
+			"a + b / c",
+			"(a + (b / c))",
+		},
+		{
+			"a + b * c + d / e - f",
+			"(((a + (b * c)) + (d / e)) - f)",
+		},
+		{
+			"3 + 4; -5 * 5",
+			"(3 + 4)((-5) * 5)",
+		},
+		{
+			"5 > 4 == 3 < 4",
+			"((5 > 4) == (3 < 4))",
+		},
+		{
+			"5 < 4 != 3 > 4",
+			"((5 < 4) != (3 > 4))",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+		{
+			"true",
+			"true",
+		},
+		{
+			"false",
+			"false",
+		},
+		{
+			"3 > 5 == false",
+			"((3 > 5) == false)",
+		},
+		{
+			"3 < 5 == true",
+			"((3 < 5) == true)",
+		},
+		{
+			"1 + (2 + 3) + 4",
+			"((1 + (2 + 3)) + 4)",
+		},
+		{
+			"(5 + 5) * 2",
+			"((5 + 5) * 2)",
+		},
+		{
+			"2 / (5 + 5)",
+			"(2 / (5 + 5))",
+		},
+		{
+			"(5 + 5) * 2 * (5 + 5)",
+			"(((5 + 5) * 2) * (5 + 5))",
+		},
+		{
+			"-(5 + 5)",
+			"(-(5 + 5))",
+		},
+		{
+			"!(true == true)",
+			"(!(true == true))",
+		},
+		{
+			"a + add(b * c) + d",
+			"((a + add((b * c))) + d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
+	}
+
+	for _, tt := range tests {
+		program := parseProgram(tt.input)
+		actual := program.String()
+		if actual != tt.expected {
+			t.Errorf("expected=%q, got=%q", tt.expected, actual)
+		}
+	}
+}
+
 // TestTracing tracing the execution of parseExpression to understand the function's principles
 func TestTracing(t *testing.T) {
-	input := `1 + 2 * 3`
-	tracingParseProgram(input)
+}
+
+func TestIfExpression(t *testing.T) {
+	input := `if (x < y) { x } else { y }`
+
+	program := parseProgram(input)
+	if len(program.Statements) != 1 {
+		t.Errorf("if expression expected [%d] statements, got [%d] statement", 1, len(program.Statements))
+	}
+
+	ifStmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("if expression expected ExpressionStatement, actually = [%s]", reflect.TypeOf(ifStmt))
+	}
+
+	if ifStmt.Token.Type != token.IF {
+		t.Errorf("if expression's token expected IF, actually = [%s]", ifStmt.Token.Type)
+	}
+
+	ifExpr, ok := ifStmt.Expr.(*ast.IfExpression)
+	if !ok {
+		t.Errorf("if expression's Expr expected IfExpression, actually = [%s]", reflect.TypeOf(ifStmt.Expr))
+	}
+
+	if !testInfixExpression(t, "x < y", ifExpr.Condition, "x", "<", "y") {
+		return
+	}
+
+	if len(ifExpr.Consequence.Statements) != 1 {
+		t.Errorf("Consequence expected 1 Statements, actually [%d]", len(ifExpr.Consequence.Statements))
+	}
+
+	consequenceStmt, ok := ifExpr.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("Consequence.Statements[0] expected ExpressionStatement, actually [%s]", reflect.TypeOf(ifExpr.Consequence.Statements[0]))
+	}
+
+	if testIdentifier(t, consequenceStmt.Expr, "x") {
+		return
+	}
+
+	if ifExpr.Alternative == nil {
+		t.Errorf("Alternative expected not nil")
+	}
+
+	if len(ifExpr.Alternative.Statements) != 1 {
+		t.Errorf("Alternative expected 1 Statements, actually [%d]", len(ifExpr.Consequence.Statements))
+	}
+
+	alternativeStmt, ok := ifExpr.Alternative.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("Alternative.Statements[0] expected ExpressionStatement, actually [%s]", reflect.TypeOf(ifExpr.Consequence.Statements[0]))
+	}
+
+	if testIdentifier(t, alternativeStmt.Expr, "y") {
+		return
+	}
 }
 
 func testLetStatement(t *testing.T, stmt ast.Statement, name string) bool {

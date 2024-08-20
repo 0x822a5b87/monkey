@@ -744,3 +744,45 @@ Here is the output:
 ```
 
 the main difference we noticed is in the third line : first example exits parseExpression due to `precedence < p.peekPrecedence()`, whereas second example goes into deeper recursive parseExpression.
+
+## 2.8 - Extending the Parser
+
+we can use `if` and `else`
+
+```go
+if (x > y) {
+  return x;
+} else {
+  return y;
+}
+```
+
+the `else` is optional and can be left out :
+
+```go
+if (x > y) {
+  return x;
+}
+```
+
+In monkey programming language, if-else-conditionals are expreesions.That means that they produce a value and in the case of if expressions that's the last evaluated line.We don't need the return statements here:
+
+```go
+let foo_bar = if (x > y) { x } else { y };
+```
+
+and the structure of if-else-conditionals like this :
+
+```mermaid
+---
+title: if-else-conditionals
+---
+flowchart LR
+
+if:::keyword --> LP["("]:::keyword --> condition["condition"] --> RP[")"]:::keyword 
+RP --> consequence --> else:::keyword --> alternative
+
+
+classDef keyword fill:#ff6347,stroke:#333,stroke-width:4px;
+```
+

@@ -62,6 +62,9 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.precedences[token.LPAREN] = CallPrecedence
 	p.precedences[token.RPAREN] = LowestPrecedence
 
+	p.precedences[token.LBRACE] = CallPrecedence
+	p.precedences[token.RBRACE] = LowestPrecedence
+
 	p.registerPrefix(token.IDENTIFIER, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseInteger)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
@@ -69,6 +72,7 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroup)
+	p.registerPrefix(token.IF, p.parseIfStmt)
 
 	p.registerInfix(token.PLUS, p.parseInfixOperator)
 	p.registerInfix(token.SUB, p.parseInfixOperator)
@@ -136,6 +140,21 @@ func (p *Parser) parseStatement() ast.Statement {
 	default:
 		return p.parseExpressionStatement()
 	}
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	blockStatement := &ast.BlockStatement{
+		Token:      p.currToken,
+		Statements: make([]ast.Statement, 0),
+	}
+
+	for !p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+		stmt := p.parseStatement()
+		blockStatement.Statements = append(blockStatement.Statements, stmt)
+	}
+	p.expectPeek(token.RBRACE)
+	return blockStatement
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -235,6 +254,14 @@ func (p *Parser) peekPrecedence() Precedence {
 	return p.getPrecedence(p.peekToken.Type)
 }
 
+func (p *Parser) expectCurrent(tokenType token.TokenType) bool {
+	if p.currTokenIs(tokenType) {
+		p.nextToken()
+		return true
+	}
+	panic(fmt.Errorf("expect current [%s], got [%s]", tokenType, p.currToken.Type))
+}
+
 // expectPeek step to next token if peek token type matches given token type
 func (p *Parser) expectPeek(tokenType token.TokenType) bool {
 	if p.peekTokenIs(tokenType) {
@@ -288,10 +315,31 @@ func (p *Parser) parseInteger() ast.Expression {
 
 func (p *Parser) parseGroup() ast.Expression {
 	// skip left parentheses
-	p.nextToken()
+	p.expectCurrent(token.LPAREN)
 	groupExpr := p.parseExpression(LowestPrecedence)
 	p.expectPeek(token.RPAREN)
 	return groupExpr
+}
+
+func (p *Parser) parseIfStmt() ast.Expression {
+	ifStmt := &ast.IfExpression{
+		Token: p.currToken,
+	}
+
+	p.expectCurrent(token.IF)
+	ifStmt.Condition = p.parseGroup()
+	p.expectCurrent(token.RPAREN)
+
+	ifStmt.Consequence = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.ELSE) {
+		// parse else statement
+		p.expectPeek(token.ELSE)
+		p.nextToken()
+		ifStmt.Alternative = p.parseBlockStatement()
+	}
+
+	return ifStmt
 }
 
 func (p *Parser) parseInfixOperator(lhs ast.Expression) ast.Expression {

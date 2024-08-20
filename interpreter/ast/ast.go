@@ -219,3 +219,49 @@ func (callExpr *CallExpression) String() string {
 }
 
 func (callExpr *CallExpression) expressionNode() {}
+
+type IfExpression struct {
+	Token       token.Token
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ie *IfExpression) TokenLiteral() string {
+	return ie.Token.Literal
+}
+
+func (ie *IfExpression) String() string {
+	buffer := bytes.Buffer{}
+	buffer.WriteString("if ")
+	buffer.WriteString(ie.Condition.String())
+	buffer.WriteString(" ")
+	buffer.WriteString(ie.Consequence.String())
+
+	if ie.Alternative != nil {
+		buffer.WriteString(ie.Alternative.String())
+	}
+
+	return buffer.String()
+}
+
+func (ie *IfExpression) expressionNode() {}
+
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) TokenLiteral() string {
+	return bs.Token.Literal
+}
+
+func (bs *BlockStatement) String() string {
+	buffer := bytes.Buffer{}
+	for _, stmt := range bs.Statements {
+		buffer.WriteString(stmt.String())
+	}
+	return buffer.String()
+}
+
+func (bs *BlockStatement) statementNode() {}
