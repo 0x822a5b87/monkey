@@ -594,3 +594,153 @@ classDef literal fill:#f9f,stroke:#333,stroke-width:4px;
 
 
 **Any expression can follow a prefix operator as operand.**That means that an AST node for a prefix operator expression has to be flexible enough to point to any expression as its operand.
+
+## 2.7 How Pratt Parsing Works
+
+Supporse we're parsing the following expression statement:
+
+
+
+```mermaid
+flowchart LR
+	1:::oprd --> plus1["+"]:::oprt --> 2:::oprd --> add2["+"]:::oprt --> 3:::oprd
+	
+classDef oprt fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef oprd fill:#ff6347,stroke:#333,stroke-width:4px;
+```
+
+
+
+> The big challege here is not to represent every operator and operand in the resulting AST, but to nest the nodes of the AST correctly.What we want is an AST that looks like this:
+
+```go
+((1 + 2) + 3)
+```
+
+AST can be represented as shown in the diagram below:
+
+```mermaid
+---
+title: expected AST
+---
+flowchart TD
+	InfixExpression1["*ast.InfixExpression"]:::expr
+	IntegerLiteral1["*ast.IntegerLiteral"]:::identifier --> Literal1(((1)))
+	IntegerLiteral2["*ast.IntegerLiteral"]:::identifier --> Literal2(((2)))
+	
+	InfixExpression1 --> IntegerLiteral1
+	InfixExpression1 --> IntegerLiteral2
+	
+	InfixExpression2["*ast.InfixExpression"]:::expr
+	InfixExpression2 --> InfixExpression1
+	InfixExpression2 --> IntegerLiteral3
+	IntegerLiteral3["*ast.IntegerLiteral"]:::identifier --> Literal3(((3)))
+
+classDef expr fill:#90ee90,stroke:#333,stroke-width:4px;
+classDef identifier fill:#ff6347,stroke:#333,stroke-width:4px;
+```
+
+add a tracing tools in `parser_tracing.go`
+
+```go
+var traceLevel int = 0
+
+var line int = 0
+
+const traceIdentPlaceholder string = "\t"
+
+func identLevel() string {
+	return fmt.Sprintf("%3d %s", line, strings.Repeat(traceIdentPlaceholder, traceLevel-1))
+}
+
+func tracePrint(fs string) {
+	fmt.Printf("%s%s\n", identLevel(), fs)
+}
+
+func incIdent() {
+	traceLevel = traceLevel + 1
+}
+
+func decIdent() {
+	traceLevel = traceLevel - 1
+}
+
+func trace(msg string) string {
+	incIdent()
+	tracePrint(fmt.Sprintf("BEGIN %s", msg))
+	line++
+	return msg
+}
+
+func untrace(msg string) {
+	tracePrint(fmt.Sprintf("END %s", msg))
+	line++
+	decIdent()
+}
+
+```
+
+and add tracing code in our function:
+
+```go
+func (p *Parser) parseExpression(precedence Precedence) ast.Expression {
+	if p.tracing {
+		defer untrace(trace(fmt.Sprintf("parseExpression : token [%s]", p.currToken.Literal)))
+	}
+	// ...
+}
+
+// other function to tracing
+```
+
+add test code
+
+```go
+// TestTracing tracing the execution of parseExpression to understand the function's principles
+func TestTracing(t *testing.T) {
+	input := `1 + 2 + 3`
+	tracingParseProgram(input)
+  
+  // other test input
+}
+
+func tracingParseProgram(input string) *ast.Program {
+	l := lexer.NewLexer(input)
+	p := NewParserWithTracing(*l)
+	return p.ParseProgram()
+}
+```
+
+### 1 + 2 + 3
+
+Here is the output:
+
+```
+  0 BEGIN parseExpression : token [1]
+  1 	BEGIN parseInfixOperator : token [+]
+  2 		BEGIN parseExpression : token [2]
+  3 		END parseExpression : token [2]
+  4 	END parseInfixOperator : token [+]
+  5 	BEGIN parseInfixOperator : token [+]
+  6 		BEGIN parseExpression : token [3]
+  7 		END parseExpression : token [3]
+  8 	END parseInfixOperator : token [+]
+  9 END parseExpression : token [1]
+```
+
+### 1 + 2 * 3
+
+```
+  0 BEGIN parseExpression : token [1]
+  1 	BEGIN parseInfixOperator : token [+]
+  2 		BEGIN parseExpression : token [2]
+  3 			BEGIN parseInfixOperator : token [*]
+  4 				BEGIN parseExpression : token [3]
+  5 				END parseExpression : token [3]
+  6 			END parseInfixOperator : token [*]
+  7 		END parseExpression : token [2]
+  8 	END parseInfixOperator : token [+]
+  9 END parseExpression : token [1]
+```
+
+the main difference we noticed is in the third line : first example exits parseExpression due to `precedence < p.peekPrecedence()`, whereas second example goes into deeper recursive parseExpression.

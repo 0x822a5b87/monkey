@@ -41,27 +41,6 @@ let foo_bar = 510;
 	}
 }
 
-func testLetStatement(t *testing.T, stmt ast.Statement, name string) bool {
-	if stmt.TokenLiteral() != "let" {
-		t.Errorf("letStmt.TokenLiteral() not 'let', got [%s]", stmt.TokenLiteral())
-	}
-
-	letStmt, ok := stmt.(*ast.LetStatement)
-	if !ok {
-		t.Errorf("stmt not *ast.LetStatement, got = %T", stmt)
-	}
-
-	if letStmt.Name.Value != name {
-		t.Errorf("letStmt.Name.Value != name, expected [%s], got [%s]", name, letStmt.Name.Value)
-	}
-
-	if letStmt.Name.TokenLiteral() != name {
-		t.Errorf("letStmt.Name.TokenLiteral() != name, expected [%s], got [%s]", name, letStmt.Name.TokenLiteral())
-	}
-
-	return true
-}
-
 func TestReturnStatement(t *testing.T) {
 	input := `
 return 5;
@@ -276,6 +255,33 @@ func TestExpression_ComplexExpression(t *testing.T) {
 	}
 }
 
+// TestTracing tracing the execution of parseExpression to understand the function's principles
+func TestTracing(t *testing.T) {
+	input := `1 + 2 * 3`
+	tracingParseProgram(input)
+}
+
+func testLetStatement(t *testing.T, stmt ast.Statement, name string) bool {
+	if stmt.TokenLiteral() != "let" {
+		t.Errorf("letStmt.TokenLiteral() not 'let', got [%s]", stmt.TokenLiteral())
+	}
+
+	letStmt, ok := stmt.(*ast.LetStatement)
+	if !ok {
+		t.Errorf("stmt not *ast.LetStatement, got = %T", stmt)
+	}
+
+	if letStmt.Name.Value != name {
+		t.Errorf("letStmt.Name.Value != name, expected [%s], got [%s]", name, letStmt.Name.Value)
+	}
+
+	if letStmt.Name.TokenLiteral() != name {
+		t.Errorf("letStmt.Name.TokenLiteral() != name, expected [%s], got [%s]", name, letStmt.Name.TokenLiteral())
+	}
+
+	return true
+}
+
 func testInfixExpression(t *testing.T, input string, exp ast.Expression, left interface{},
 	operator string, right interface{}) bool {
 
@@ -395,6 +401,12 @@ func checkProgramSize(t *testing.T, program *ast.Program, desc string, expectedS
 	if len(program.Statements) != expectedSize {
 		t.Fatalf("%s[%d] does not have enough statements, expected [%d], got [%d]", desc, offset, expectedSize, len(program.Statements))
 	}
+}
+
+func tracingParseProgram(input string) *ast.Program {
+	l := lexer.NewLexer(input)
+	p := NewParserWithTracing(*l)
+	return p.ParseProgram()
 }
 
 func parseProgram(input string) *ast.Program {

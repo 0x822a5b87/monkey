@@ -33,6 +33,8 @@ type Parser struct {
 	infixParseFns  map[token.TokenType]infixParseFn
 
 	precedences map[token.TokenType]Precedence
+
+	tracing bool
 }
 
 func NewParser(l lexer.Lexer) *Parser {
@@ -83,6 +85,13 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.nextToken()
 
 	return p
+}
+
+func NewParserWithTracing(l lexer.Lexer) *Parser {
+	parser := NewParser(l)
+	parser.tracing = true
+
+	return parser
 }
 
 // nextToken return next token
@@ -172,6 +181,9 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 }
 
 func (p *Parser) parseExpression(precedence Precedence) ast.Expression {
+	if p.tracing {
+		defer untrace(trace(fmt.Sprintf("parseExpression : token [%s]", p.currToken.Literal)))
+	}
 	// start parse expression from prefix parse function
 	prefixFn := p.getPrefixFn(p.currToken.Type)
 	lhs := prefixFn()
@@ -241,6 +253,9 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
+	if p.tracing {
+		defer untrace(trace(fmt.Sprintf("parsePrefixExpression : token [%s]", p.currToken.Literal)))
+	}
 	expr := ast.PrefixExpression{
 		Token:    p.currToken,
 		Operator: p.currToken.Literal,
@@ -280,6 +295,9 @@ func (p *Parser) parseGroup() ast.Expression {
 }
 
 func (p *Parser) parseInfixOperator(lhs ast.Expression) ast.Expression {
+	if p.tracing {
+		defer untrace(trace(fmt.Sprintf("parseInfixOperator : token [%s]", p.currToken.Literal)))
+	}
 	expr := &ast.InfixExpression{
 		Token:    p.currToken,
 		Operator: p.currToken.Literal,
