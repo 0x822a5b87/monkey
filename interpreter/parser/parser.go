@@ -44,6 +44,8 @@ func NewParser(l lexer.Lexer) *Parser {
 	}
 
 	p.precedences[token.INT] = LowestPrecedence
+	p.precedences[token.IDENTIFIER] = LowestPrecedence
+	p.precedences[token.COMMA] = LowestPrecedence
 	p.precedences[token.BANG] = PrefixPrecedence
 	p.precedences[token.SUB] = SumPrecedence
 	p.precedences[token.PLUS] = SumPrecedence
@@ -53,11 +55,18 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.precedences[token.LT] = LessGreaterPrecedence
 	p.precedences[token.EQ] = EqualsPrecedence
 	p.precedences[token.NotEq] = EqualsPrecedence
+	p.precedences[token.TRUE] = LowestPrecedence
+	p.precedences[token.FALSE] = LowestPrecedence
+	p.precedences[token.LPAREN] = CallPrecedence
+	p.precedences[token.RPAREN] = LowestPrecedence
 
 	p.registerPrefix(token.IDENTIFIER, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseInteger)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.SUB, p.parsePrefixExpression)
+	p.registerPrefix(token.TRUE, p.parseBoolean)
+	p.registerPrefix(token.FALSE, p.parseBoolean)
+	p.registerPrefix(token.LPAREN, p.parseGroup)
 
 	p.registerInfix(token.PLUS, p.parseInfixOperator)
 	p.registerInfix(token.SUB, p.parseInfixOperator)
@@ -67,6 +76,7 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.registerInfix(token.LT, p.parseInfixOperator)
 	p.registerInfix(token.EQ, p.parseInfixOperator)
 	p.registerInfix(token.NotEq, p.parseInfixOperator)
+	p.registerInfix(token.LPAREN, p.parseCall)
 
 	// call next token twice so that current token and peek token are both set
 	p.nextToken()
@@ -165,7 +175,7 @@ func (p *Parser) parseExpression(precedence Precedence) ast.Expression {
 	// start parse expression from prefix parse function
 	prefixFn := p.getPrefixFn(p.currToken.Type)
 	lhs := prefixFn()
-	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+	for !p.isEof() && precedence < p.peekPrecedence() {
 		p.nextToken()
 		infixFn := p.getInfixFn(p.currToken.Type)
 		lhs = infixFn(lhs)
@@ -193,6 +203,10 @@ func (p *Parser) currTokenIs(tokenType token.TokenType) bool {
 	return p.currToken.Type == tokenType
 }
 
+func (p *Parser) isEof() bool {
+	return p.peekTokenIs(token.SEMICOLON) || p.peekTokenIs(token.EOF)
+}
+
 func (p *Parser) peekTokenIs(tokenType token.TokenType) bool {
 	return p.peekToken.Type == tokenType
 }
@@ -214,9 +228,8 @@ func (p *Parser) expectPeek(tokenType token.TokenType) bool {
 	if p.peekTokenIs(tokenType) {
 		p.nextToken()
 		return true
-	} else {
-		return false
 	}
+	panic(fmt.Errorf("expected [%s], got [%s]", tokenType, p.peekToken.Type))
 }
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
@@ -241,6 +254,14 @@ func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
 }
 
+func (p *Parser) parseBoolean() ast.Expression {
+	b, err := strconv.ParseBool(p.currToken.Literal)
+	if err != nil {
+		panic(err)
+	}
+	return &ast.BooleanExpression{Token: p.currToken, Value: b}
+}
+
 func (p *Parser) parseInteger() ast.Expression {
 	integerLiteral := p.currToken.Literal
 	integer, err := strconv.ParseInt(integerLiteral, 10, 64)
@@ -248,6 +269,14 @@ func (p *Parser) parseInteger() ast.Expression {
 		panic(err)
 	}
 	return &ast.IntegerLiteral{Token: p.currToken, Value: integer}
+}
+
+func (p *Parser) parseGroup() ast.Expression {
+	// skip left parentheses
+	p.nextToken()
+	groupExpr := p.parseExpression(LowestPrecedence)
+	p.expectPeek(token.RPAREN)
+	return groupExpr
 }
 
 func (p *Parser) parseInfixOperator(lhs ast.Expression) ast.Expression {
@@ -263,4 +292,25 @@ func (p *Parser) parseInfixOperator(lhs ast.Expression) ast.Expression {
 	expr.Rhs = p.parseExpression(precedence)
 
 	return expr
+}
+
+func (p *Parser) parseCall(lhs ast.Expression) ast.Expression {
+	call := &ast.CallExpression{
+		Token:       p.currToken,
+		Fn:          lhs,
+		Expressions: make([]ast.Expression, 0),
+	}
+
+	for !p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		expression := p.parseExpression(LowestPrecedence)
+		call.Expressions = append(call.Expressions, expression)
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+		}
+	}
+
+	p.expectPeek(token.RPAREN)
+
+	return call
 }

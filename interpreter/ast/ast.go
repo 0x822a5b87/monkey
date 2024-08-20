@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Node every node in our AST has to implement the Node interface
@@ -132,7 +133,7 @@ func (i *IntegerLiteral) TokenLiteral() string {
 }
 
 func (i *IntegerLiteral) String() string {
-	return fmt.Sprintf("%d;", i.Value)
+	return fmt.Sprintf("%d", i.Value)
 }
 
 func (i *IntegerLiteral) expressionNode() {}
@@ -190,3 +191,31 @@ func (boolExpr *BooleanExpression) String() string {
 }
 
 func (boolExpr *BooleanExpression) expressionNode() {}
+
+type CallExpression struct {
+	Token       token.Token
+	Fn          Expression // TODO support namespace, package, and so forth
+	Expressions []Expression
+}
+
+func (callExpr *CallExpression) TokenLiteral() string {
+	return callExpr.Token.Literal
+}
+
+func (callExpr *CallExpression) String() string {
+	buffer := bytes.Buffer{}
+	buffer.WriteString(callExpr.Fn.String())
+	buffer.WriteString("(")
+
+	// 将结构体数组转换为字符串数组
+	var strArray []string
+	for _, s := range callExpr.Expressions {
+		strArray = append(strArray, s.String())
+	}
+
+	buffer.WriteString(strings.Join(strArray, ", "))
+	buffer.WriteString(")")
+	return buffer.String()
+}
+
+func (callExpr *CallExpression) expressionNode() {}

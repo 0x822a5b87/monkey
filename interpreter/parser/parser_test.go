@@ -213,6 +213,69 @@ func TestExpression_InfixOperator(t *testing.T) {
 
 }
 
+func TestExpression_ComplexExpression(t *testing.T) {
+	complexExpressions := []struct {
+		input          string
+		expectedOutput string
+	}{
+		{
+			"1 + (2 + 3) + 4",
+			"((1 + (2 + 3)) + 4)",
+		},
+		{
+			"1 + (2 + 3) + 4",
+			"((1 + (2 + 3)) + 4)",
+		},
+		{
+			"(5 + 5) * 2",
+			"((5 + 5) * 2)",
+		},
+		{
+			"2 / (5 + 5)",
+			"(2 / (5 + 5))",
+		},
+		{
+			"(5 + 5) * 2 * (5 + 5)",
+			"(((5 + 5) * 2) * (5 + 5))",
+		},
+		{
+			"-(5 + 5)",
+			"(-(5 + 5))",
+		},
+		{
+			"!(true == true)",
+			"(!(true == true))",
+		},
+		{
+			"a + add(b * c) + d",
+			"((a + add((b * c))) + d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
+		//{
+		//	"a * [1, 2, 3, 4][b * c] * d",
+		//	"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+		//},
+		//{
+		//	"add(a * b[2], b[1], 2 * [1, 2][1])",
+		//	"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+		//},
+	}
+
+	for i, complexExpr := range complexExpressions {
+		program := parseProgram(complexExpr.input)
+		if complexExpr.expectedOutput != program.String() {
+			t.Fatalf("offset = [%d], expected [%s], got [%s]", i, complexExpr.expectedOutput, program.String())
+		}
+	}
+}
+
 func testInfixExpression(t *testing.T, input string, exp ast.Expression, left interface{},
 	operator string, right interface{}) bool {
 
