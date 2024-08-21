@@ -73,6 +73,7 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroup)
 	p.registerPrefix(token.IF, p.parseIfStmt)
+	p.registerPrefix(token.FUNCTION, p.parseFn)
 
 	p.registerInfix(token.PLUS, p.parseInfixOperator)
 	p.registerInfix(token.SUB, p.parseInfixOperator)
@@ -254,7 +255,7 @@ func (p *Parser) peekPrecedence() Precedence {
 	return p.getPrecedence(p.peekToken.Type)
 }
 
-func (p *Parser) expectCurrent(tokenType token.TokenType) bool {
+func (p *Parser) expect(tokenType token.TokenType) bool {
 	if p.currTokenIs(tokenType) {
 		p.nextToken()
 		return true
@@ -315,7 +316,7 @@ func (p *Parser) parseInteger() ast.Expression {
 
 func (p *Parser) parseGroup() ast.Expression {
 	// skip left parentheses
-	p.expectCurrent(token.LPAREN)
+	p.expect(token.LPAREN)
 	groupExpr := p.parseExpression(LowestPrecedence)
 	p.expectPeek(token.RPAREN)
 	return groupExpr
@@ -326,9 +327,9 @@ func (p *Parser) parseIfStmt() ast.Expression {
 		Token: p.currToken,
 	}
 
-	p.expectCurrent(token.IF)
+	p.expect(token.IF)
 	ifStmt.Condition = p.parseGroup()
-	p.expectCurrent(token.RPAREN)
+	p.expect(token.RPAREN)
 
 	ifStmt.Consequence = p.parseBlockStatement()
 
@@ -375,8 +376,32 @@ func (p *Parser) parseCall(lhs ast.Expression) ast.Expression {
 			p.nextToken()
 		}
 	}
-
 	p.expectPeek(token.RPAREN)
 
 	return call
+}
+
+func (p *Parser) parseFn() ast.Expression {
+	fn := &ast.FnLiteral{
+		Token:      p.currToken,
+		Parameters: make([]*ast.Identifier, 0),
+	}
+
+	// parse parameters
+	p.expect(token.FUNCTION)
+	for !p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		// Identifier inherits from Expression, so we can't convert an Expression to an Identifier.
+		// Therefor, we can't simply use p.parseIdentifier
+		identifier := &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+		fn.Parameters = append(fn.Parameters, identifier)
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+		}
+	}
+	p.expectPeek(token.RPAREN)
+	p.expectPeek(token.LBRACE)
+	fn.Body = p.parseBlockStatement()
+
+	return fn
 }

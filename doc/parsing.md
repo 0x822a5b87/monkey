@@ -56,7 +56,7 @@ In monkey, variable bindings are statements of the following form:
 // assign the variable to a literally value
 let x = 5;
 
-// assign the variable to function execution result 
+// assign the variable to function execution result
 let foo_bar = add(5, 5);
 
 // assign the variable to an expression
@@ -127,7 +127,7 @@ type Identifier struct {
 type LetStatement struct {
 	Token token.Token
 	Name  *Identifier // Name the name of variable
-	Value Expression  // Value expression represent the right side of the 
+	Value Expression  // Value expression represent the right side of the
 }
 
 func (identifier *Identifier) expressionNode() {}
@@ -149,7 +149,7 @@ With `Program`, `LetStatement`, `Identifier` defined this monkey source code:
 let x = 5;
 ```
 
-could be represented by an AST looking like this : 
+could be represented by an AST looking like this :
 
 ```mermaid
 ---
@@ -159,14 +159,14 @@ flowchart TD
 	subgraph Program[*ast.Program]
 		Statements
 	end
-	
+
 	subgraph LetStatement[*ast.LetStatement]
   	Name
 		Value
 	end
-	
+
 	Program --> LetStatement
-	
+
 	Name --> Identifier[*ast.Identifier]
 	Value --> Expression[*ast.Expression]
 ```
@@ -182,10 +182,10 @@ Now before we start writing tests and filling out the `ParseProgram` I want to s
 function parseProgram() {
   program = newProgramASTNode()
   advanceTokens()
-  
+
   for (currentToken != EOF_TOKEN) {
     statement = null
-    
+
     if (currentToken == LET_TOKEN) {
       // step into parse let statement
       statement = parseLetStatement()
@@ -194,14 +194,14 @@ function parseProgram() {
     } else if (currentToken == IF_TOKEN) {
       statement = parseIf()
     }
-    
+
     if (statement != null) {
       program.Statemens.push(statement)
     }
-    
+
     advanceTokens()
   }
-  
+
   return program
 }
 
@@ -209,18 +209,18 @@ function parseStatement() {
   advanceTokens()
   identifier = parseIdentifier()
   advanceTokens()
-  
+
   if currentToken() != EQUAL_TOKEN {
     parseError("equal sign expected")
     return nil
   }
   advanceTokens()
   value = parseExpression()
-  
+
   variableStatement = newVariableStatementASTNode()
   variableStatement.identifier = identifier
   variableStatement.value = value
-  
+
   return variableStatement
 }
 
@@ -236,7 +236,7 @@ function parseExpression() {
       // encounter semicolon, return literal value
       return parseIntegerLiteral()
     }
-    
+
     if (peekToken() == OPERATOR_TOKEN) {
       return parseOperatorExpression()
     }
@@ -247,7 +247,7 @@ function parseExpression() {
 }
 ```
 
-> we can see what the parser has todo. It repeatedly advances the tokens and checks the current token to decide what to do next: either call another parsing function or throw an error.Each function then does its job and possibly constructs an AST node so that the "main loop" in `parseProgram()` can advance the tokens and decide what to do again. 
+> we can see what the parser has todo. It repeatedly advances the tokens and checks the current token to decide what to do next: either call another parsing function or throw an error.Each function then does its job and possibly constructs an AST node so that the "main loop" in `parseProgram()` can advance the tokens and decide what to do again.
 
 Again, we're starting a test before we flesh out *ParseProgram*.Here is a test case to make sure that the parsing of let statements works:
 
@@ -604,7 +604,7 @@ Supporse we're parsing the following expression statement:
 ```mermaid
 flowchart LR
 	1:::oprd --> plus1["+"]:::oprt --> 2:::oprd --> add2["+"]:::oprt --> 3:::oprd
-	
+
 classDef oprt fill:#90ee90,stroke:#333,stroke-width:4px;
 classDef oprd fill:#ff6347,stroke:#333,stroke-width:4px;
 ```
@@ -627,10 +627,10 @@ flowchart TD
 	InfixExpression1["*ast.InfixExpression"]:::expr
 	IntegerLiteral1["*ast.IntegerLiteral"]:::identifier --> Literal1(((1)))
 	IntegerLiteral2["*ast.IntegerLiteral"]:::identifier --> Literal2(((2)))
-	
+
 	InfixExpression1 --> IntegerLiteral1
 	InfixExpression1 --> IntegerLiteral2
-	
+
 	InfixExpression2["*ast.InfixExpression"]:::expr
 	InfixExpression2 --> InfixExpression1
 	InfixExpression2 --> IntegerLiteral3
@@ -700,7 +700,7 @@ add test code
 func TestTracing(t *testing.T) {
 	input := `1 + 2 + 3`
 	tracingParseProgram(input)
-  
+
   // other test input
 }
 
@@ -747,6 +747,8 @@ the main difference we noticed is in the third line : first example exits parseE
 
 ## 2.8 - Extending the Parser
 
+### If Expression
+
 we can use `if` and `else`
 
 ```go
@@ -779,10 +781,144 @@ title: if-else-conditionals
 ---
 flowchart LR
 
-if:::keyword --> LP["("]:::keyword --> condition["condition"] --> RP[")"]:::keyword 
+if:::keyword --> LP["("]:::keyword --> condition["condition"] --> RP[")"]:::keyword
 RP --> consequence --> else:::keyword --> alternative
 
 
 classDef keyword fill:#ff6347,stroke:#333,stroke-width:4px;
 ```
+
+so the code will be like this:
+
+```go
+type IfExpression struct {
+	Token       token.Token
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ie *IfExpression) TokenLiteral() string {
+	return ie.Token.Literal
+}
+
+func (ie *IfExpression) String() string {
+	buffer := bytes.Buffer{}
+	buffer.WriteString("if ")
+	buffer.WriteString(ie.Condition.String())
+	buffer.WriteString(" ")
+	buffer.WriteString(ie.Consequence.String())
+
+	if ie.Alternative != nil {
+		buffer.WriteString(ie.Alternative.String())
+	}
+
+	return buffer.String()
+}
+
+func (ie *IfExpression) expressionNode() {}
+
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) TokenLiteral() string {
+	return bs.Token.Literal
+}
+
+func (bs *BlockStatement) String() string {
+	buffer := bytes.Buffer{}
+	for _, stmt := range bs.Statements {
+		buffer.WriteString(stmt.String())
+	}
+	return buffer.String()
+}
+
+func (bs *BlockStatement) statementNode() {}
+```
+
+### Function Literals
+
+In monkey programming language, function literals look like this:
+
+```go
+fn (x, y) {
+  return x + y;
+}
+```
+
+It starts with the keyword `fn`, followed by a list of parameters, followed by a block statement, which is the function's body, that get executed when the function is called. The abstract of a function literal is this:
+
+```mermaid
+---
+title: The abstract structure of a function literal
+---
+
+flowchart LR
+
+	fn:::keyword --> parameter --> block_statement
+
+classDef keyword fill:#1e90ff,stroke:#ffffff,stroke-width:2px;
+```
+
+this list can also be empty:
+
+```js
+fn() {
+  return foo_bar + bar_foo;
+}
+```
+
+We can use function literals in every place where any other expression is valid.For example, here is a function literal as the expression in a let statement:
+
+```js
+let my_func = fn(x, y) { return x + y; }
+```
+
+And here is a function literal as the expression in a return statement inside another function literal:
+
+```js
+fn() {
+  return fn(x, y) { return x + y; };
+}
+```
+
+Using a function literal as an argument when calling another function is also possible:
+
+```js
+my_func(x, y, fn(x, y){ return x > y; });
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

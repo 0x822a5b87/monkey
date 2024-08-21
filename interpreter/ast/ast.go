@@ -265,3 +265,29 @@ func (bs *BlockStatement) String() string {
 }
 
 func (bs *BlockStatement) statementNode() {}
+
+type FnLiteral struct {
+	Token      token.Token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (f *FnLiteral) TokenLiteral() string {
+	return f.Token.Literal
+}
+
+func (f *FnLiteral) String() string {
+	buffer := bytes.Buffer{}
+	buffer.WriteString("fn(")
+	for i, parameter := range f.Parameters {
+		buffer.WriteString(parameter.String())
+		if i != len(f.Parameters)-1 {
+			buffer.WriteString(",")
+		}
+	}
+	buffer.WriteString(")")
+	buffer.WriteString(f.Body.String())
+	return buffer.String()
+}
+
+func (f *FnLiteral) expressionNode() {}
