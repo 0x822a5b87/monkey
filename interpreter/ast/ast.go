@@ -193,9 +193,9 @@ func (boolExpr *BooleanExpression) String() string {
 func (boolExpr *BooleanExpression) expressionNode() {}
 
 type CallExpression struct {
-	Token       token.Token
-	Fn          Expression // TODO support namespace, package, and so forth
-	Expressions []Expression
+	Token     token.Token
+	Fn        Expression
+	Arguments []Expression
 }
 
 func (callExpr *CallExpression) TokenLiteral() string {
@@ -209,7 +209,7 @@ func (callExpr *CallExpression) String() string {
 
 	// 将结构体数组转换为字符串数组
 	var strArray []string
-	for _, s := range callExpr.Expressions {
+	for _, s := range callExpr.Arguments {
 		strArray = append(strArray, s.String())
 	}
 

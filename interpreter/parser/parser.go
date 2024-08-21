@@ -363,15 +363,15 @@ func (p *Parser) parseInfixOperator(lhs ast.Expression) ast.Expression {
 
 func (p *Parser) parseCall(lhs ast.Expression) ast.Expression {
 	call := &ast.CallExpression{
-		Token:       p.currToken,
-		Fn:          lhs,
-		Expressions: make([]ast.Expression, 0),
+		Token:     p.currToken,
+		Fn:        lhs,
+		Arguments: make([]ast.Expression, 0),
 	}
 
 	for !p.peekTokenIs(token.RPAREN) {
 		p.nextToken()
 		expression := p.parseExpression(LowestPrecedence)
-		call.Expressions = append(call.Expressions, expression)
+		call.Arguments = append(call.Arguments, expression)
 		if p.peekTokenIs(token.COMMA) {
 			p.nextToken()
 		}
