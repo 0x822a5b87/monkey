@@ -2,7 +2,7 @@ package repl
 
 import (
 	"0x822a5b87/monkey/lexer"
-	"0x822a5b87/monkey/token"
+	"0x822a5b87/monkey/parser"
 	"bufio"
 	"fmt"
 	"io"
@@ -24,8 +24,14 @@ func Start(in io.Reader, out io.Writer) {
 		line := scanner.Text()
 		l := lexer.NewLexer(line)
 
-		for nextToken, err := l.NextToken(); err == nil && nextToken.Type != token.EOF; nextToken, err = l.NextToken() {
-			fmt.Printf("%+v\n", nextToken)
+		p := parser.NewParser(*l)
+		program := p.ParseProgram()
+		for _, stmt := range program.Statements {
+			_, err := io.WriteString(out, stmt.String())
+			fmt.Println()
+			if err != nil {
+				fmt.Printf(err.Error())
+			}
 		}
 	}
 }

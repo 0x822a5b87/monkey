@@ -132,7 +132,6 @@ func (p *Parser) ParseProgram() *ast.Program {
 }
 
 func (p *Parser) parseStatement() ast.Statement {
-	// TODO support more statement parser
 	switch p.currToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
@@ -167,14 +166,11 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	letStmt.Name = &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
 
-	if !p.expectPeek(token.ASSIGN) {
-		panic(common.ErrSyntax)
-	}
+	p.expectPeek(token.ASSIGN)
+	p.nextToken()
 
-	// TODO parse expression
-	for !p.currTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
+	letStmt.Value = p.parseExpression(LowestPrecedence)
+	p.expectPeek(token.SEMICOLON)
 
 	return letStmt
 }
@@ -182,10 +178,8 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	returnStatement := &ast.ReturnStatement{Token: p.currToken}
 	p.nextToken()
-	// TODO parse expression as return statement's value
-	for !p.currTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
+	returnStatement.ReturnValue = p.parseExpression(LowestPrecedence)
+	p.expectPeek(token.SEMICOLON)
 	return returnStatement
 }
 
