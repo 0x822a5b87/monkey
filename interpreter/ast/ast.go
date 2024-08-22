@@ -221,6 +221,7 @@ func (callExpr *CallExpression) String() string {
 func (callExpr *CallExpression) expressionNode() {}
 
 type IfExpression struct {
+	// TODO add support for if-else if-else expression
 	Token       token.Token
 	Condition   Expression
 	Consequence *BlockStatement
