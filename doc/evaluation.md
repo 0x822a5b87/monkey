@@ -233,7 +233,88 @@ flowchart LR
 Program["Eval Program"] --> Statement["Eval Statement"] --> ExpressionStatement["Eval ExpressionStatement"] --> Expression["Eval Expression"]
 ```
 
-### Completing the REPL
+### REPL
+
+we got a lot of statement/expression to support:
+
+1. IntegerLiteral
+2. Boolean
+3. Null
+4. PrefixExpression
+
+### PrefixExpression
+
+```go
+func Eval(node ast.Node) object.Object {
+	switch node := node.(type) {
+	// ...
+	case *ast.PrefixExpression:
+		return evalPrefixExpression(node)
+	// ...
+	}
+}
+```
+
+do eval prefix expression
+
+```go
+func evalPrefixExpression(prefix *ast.PrefixExpression) object.Object {
+	switch prefix.Operator {
+	case string(token.BANG):
+		return evalBangOfPrefixExpression(prefix.Right)
+	case string(token.SUB):
+		return evalMinusOfPrefixExpression(prefix.Right)
+	default:
+		panic(common.ErrUnknownToken)
+	}
+}
+
+func evalBangOfPrefixExpression(rightExpr ast.Expression) object.Object {
+	right := Eval(rightExpr)
+	switch right {
+	case object.NativeFalse:
+		return object.NativeTrue
+	case object.NativeNull:
+		return object.NativeTrue
+	case object.NativeTrue:
+		return object.NativeFalse
+	default:
+		return object.NativeFalse
+	}
+}
+
+func evalMinusOfPrefixExpression(rightExpr ast.Expression) object.Object {
+	right := Eval(rightExpr)
+	if right.Type() != object.ObjInteger {
+		// TODO think of it, return NativeNull or panic
+		return object.NativeNull
+	}
+	integer := right.(*object.Integer)
+	return &object.Integer{Value: -integer.Value}
+}
+```
+
+The workflow of our code is as follow:
+
+```mermaid
+---
+title: Evaluate Prefix Expression
+---
+flowchart TD
+    Eval --> switch["prefix.Operator"]:::literal
+    switch[prefix.Operator] --> switch_operator_state
+    
+    switch_operator_state --> evalBangOfPrefixExpression
+    switch_operator_state --> evalMinusOfPrefixExpression
+    
+    evalBangOfPrefixExpression --Bang--> Eval
+    evalMinusOfPrefixExpression --Minus--> Eval
+
+    
+classDef literal fill:#f9f,stroke:#333,stroke-width:4px;
+```
+
+
 
 
 

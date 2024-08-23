@@ -128,6 +128,11 @@ type IntegerLiteral struct {
 	Value int64
 }
 
+type FloatLiteral struct {
+	Token token.Token
+	Value float64
+}
+
 func (i *IntegerLiteral) TokenLiteral() string {
 	return i.Token.Literal
 }

@@ -5,8 +5,9 @@ import (
 )
 
 var (
-	ErrUnknownToken = ErrorInfo{100000, "unknown token"} // encounter unknown token
-	ErrSyntax       = ErrorInfo{100001, "syntax error"}
+	ErrUnknownToken            = ErrorInfo{100000, "unknown token"} // encounter unknown token
+	ErrSyntax                  = ErrorInfo{100001, "syntax error"}
+	ErrUnknownTypeOfExpression = ErrorInfo{100002, "unknown type of expression"}
 )
 
 type ErrorCode int // ErrorCode 错误码

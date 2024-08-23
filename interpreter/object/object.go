@@ -5,6 +5,12 @@ import (
 	"strconv"
 )
 
+var (
+	NativeNull  = &Null{}
+	NativeFalse = &Boolean{Value: false} // NativeFalse native false
+	NativeTrue  = &Boolean{Value: true}  // NativeTrue native true
+)
+
 type ObjType string
 
 // Object represent an object
@@ -29,6 +35,65 @@ func (i *Integer) Inspect() string {
 	return strconv.FormatInt(i.Value, 10)
 }
 
+func (i *Integer) Sub(o Object) Object {
+	if other, ok := o.(*Integer); ok {
+		i.Value = i.Value - other.Value
+		return i
+	}
+	return NativeNull
+}
+
+func (i *Integer) Mul(o Object) Object {
+	if other, ok := o.(*Integer); ok {
+		i.Value = i.Value * other.Value
+		return i
+	}
+	return NativeNull
+}
+
+func (i *Integer) Equal(o Object) *Boolean {
+	var other *Integer
+	var ok bool
+	if other, ok = o.(*Integer); !ok {
+		return NativeFalse
+	}
+
+	if i.Value == other.Value {
+		return NativeTrue
+	} else {
+		return NativeFalse
+	}
+}
+
+func (i *Integer) NotEqual(o Object) *Boolean {
+	if i.Equal(o).Value {
+		return NativeFalse
+	} else {
+		return NativeTrue
+	}
+}
+
+func (i *Integer) GreaterThan(o Object) *Boolean {
+	var other *Integer
+	var ok bool
+	if other, ok = o.(*Integer); !ok {
+		return NativeFalse
+	}
+
+	if i.Value > other.Value {
+		return NativeTrue
+	}
+
+	return NativeFalse
+}
+
+func (i *Integer) LessThan(o Object) *Boolean {
+	if !i.Equal(o).Value && !i.GreaterThan(o).Value {
+		return NativeTrue
+	}
+	return NativeFalse
+}
+
 type Boolean struct {
 	Value bool
 }
@@ -39,6 +104,28 @@ func (b *Boolean) Type() ObjType {
 
 func (b *Boolean) Inspect() string {
 	return fmt.Sprintf("%t", b.Value)
+}
+
+func (b *Boolean) Equal(o Object) *Boolean {
+	var other *Boolean
+	var ok bool
+	if other, ok = o.(*Boolean); !ok {
+		return NativeFalse
+	}
+
+	if b.Value == other.Value {
+		return NativeTrue
+	} else {
+		return NativeFalse
+	}
+}
+
+func (b *Boolean) NotEqual(o Object) *Boolean {
+	if b.Equal(o).Value {
+		return NativeFalse
+	} else {
+		return NativeTrue
+	}
 }
 
 type Null struct {

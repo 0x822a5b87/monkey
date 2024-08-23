@@ -1,6 +1,7 @@
 package repl
 
 import (
+	"0x822a5b87/monkey/evaluator"
 	"0x822a5b87/monkey/lexer"
 	"0x822a5b87/monkey/parser"
 	"bufio"
@@ -27,7 +28,8 @@ func Start(in io.Reader, out io.Writer) {
 		p := parser.NewParser(*l)
 		program := p.ParseProgram()
 		for _, stmt := range program.Statements {
-			_, err := io.WriteString(out, stmt.String())
+			obj := evaluator.Eval(stmt)
+			_, err := io.WriteString(out, obj.Inspect())
 			fmt.Println()
 			if err != nil {
 				fmt.Printf(err.Error())
