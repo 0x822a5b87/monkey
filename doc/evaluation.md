@@ -162,19 +162,19 @@ classDiagram
     Node <|-- Statement
     Node <|-- Expression
     Node <|-- Program
-    
+
     Expression <|-- Identifier
     Expression <|-- IntegerLiteral
     Expression <|-- PrefixExpression
     Expression <|-- InfixExpression
-    
+
     Statement <|-- LetStatement
     Statement <|-- ReturnStatement
     Statement <|-- ExpressionStatement
-  
+
 	Program *-- Statement
 	Expression *-- ExpressionStatement
-	
+
 
 <<interface>> Node
 <<interface>> Statement
@@ -182,10 +182,10 @@ classDiagram
 ```
 
 1. There are two different structs inherit from `Node`, called `Statement` and `Expression`
-2. `Program` composite `Statement`, `ExpressionStatement` composite `Expression` 
+2. `Program` composite `Statement`, `ExpressionStatement` composite `Expression`
 3. **So we need to traverse the program and evaluate each Statement within the program. Meanwhile, we can evaluate Expressions through ExpressionStatement.Expression.**
 
-Then we begin evaluating expressions : **We should always start at the top of the tree, receiving an `*ast.Program`, and then traverse every Node in it.** 
+Then we begin evaluating expressions : **We should always start at the top of the tree, receiving an `*ast.Program`, and then traverse every Node in it.**
 
 Here is what the signature of `Eval` will look like in its first version: it takes ast.Node as input and return an object.Object.
 
@@ -303,18 +303,42 @@ title: Evaluate Prefix Expression
 flowchart TD
     Eval --> switch["prefix.Operator"]:::literal
     switch[prefix.Operator] --> switch_operator_state
-    
+
     switch_operator_state --> evalBangOfPrefixExpression
     switch_operator_state --> evalMinusOfPrefixExpression
-    
+
     evalBangOfPrefixExpression --Bang--> Eval
     evalMinusOfPrefixExpression --Minus--> Eval
 
-    
+
 classDef literal fill:#f9f,stroke:#333,stroke-width:4px;
 ```
 
+### 3.6 - Conditionals
 
+The only hard thing about their implementation is deciding when to evaluate what.Because that's the whole point of Conditionals: only ever evaluate something based on a condition.Considering this:
+
+```js
+if (x > 10) {
+    puts("everything okay!");
+} else {
+    puts("x is too low!");
+    shutdownSystem();
+}
+```
+
+When evaluating this if-else-expression the important thing is to only evaluate the correct branch.In the case of monkey programming language,the consequence part of the condition will be evaluated when condition is `truthy`. **And truthy means: it's not null and it's not false.**It doesn't necessary to be true.
+
+```js
+let x = 10;
+// condition is truthy
+if (x) {
+    puts("everything okay!");
+} else {
+    puts("x is too low!");
+    shutdownSystem();
+}
+```
 
 
 

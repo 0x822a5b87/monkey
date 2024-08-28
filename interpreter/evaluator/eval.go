@@ -15,6 +15,10 @@ func Eval(node ast.Node) object.Object {
 		return evalStatements(node.Statements)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expr)
+	case *ast.IfExpression:
+		return evalIfExpression(node)
+	case *ast.BlockStatement:
+		return evalStatements(node.Statements)
 	case *ast.BooleanExpression:
 		return evalBooleanLiteral(node)
 	case *ast.IntegerLiteral:
@@ -171,4 +175,42 @@ func evalStatements(stmts []ast.Statement) object.Object {
 		result = Eval(stmt)
 	}
 	return result
+}
+
+func evalIfExpression(ifStmt *ast.IfExpression) object.Object {
+	condition := Eval(ifStmt.Condition)
+	if isTruthyObject(condition) {
+		return Eval(ifStmt.Consequence)
+	}
+
+	if ifStmt.Alternative != nil {
+		return Eval(ifStmt.Alternative)
+	} else {
+		return object.NativeNull
+	}
+}
+
+//func isTruthyObject(o object.Object) bool {
+//	if o.Type() == object.ObjNull {
+//		return false
+//	}
+//
+//	// an object of type Boolean with a value of false means it is not truthy
+//	b, ok := o.(*object.Boolean)
+//	if ok {
+//		return b.Value
+//	}
+//
+//	return true
+//}
+
+func isTruthyObject(o object.Object) bool {
+	switch o {
+	case object.NativeNull:
+		fallthrough
+	case object.NativeFalse:
+		return false
+	default:
+		return true
+	}
 }
