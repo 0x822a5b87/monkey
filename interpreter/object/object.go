@@ -154,3 +154,15 @@ func (n *Null) Type() ObjType {
 func (n *Null) Inspect() string {
 	return "null"
 }
+
+type Return struct {
+	Object
+}
+
+func (n *Return) Type() ObjType {
+	return ObjReturn
+}
+
+func (n *Return) Inspect() string {
+	return n.Object.Inspect()
+}

@@ -65,6 +65,8 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.precedences[token.LBRACE] = CallPrecedence
 	p.precedences[token.RBRACE] = LowestPrecedence
 
+	p.precedences[token.RETURN] = LowestPrecedence
+
 	p.registerPrefix(token.IDENTIFIER, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseInteger)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
@@ -240,7 +242,7 @@ func (p *Parser) peekTokenIs(tokenType token.TokenType) bool {
 func (p *Parser) getPrecedence(tokenType token.TokenType) Precedence {
 	precedence, ok := p.precedences[tokenType]
 	if !ok {
-		panic(fmt.Errorf("precedence not found for type [%s]", tokenType))
+		panic(fmt.Errorf("precedence not found for type [%s], position = [%d]", tokenType, p.lex.CurrentPos()))
 	}
 	return precedence
 }

@@ -340,7 +340,21 @@ if (x) {
 }
 ```
 
+### 3.7 - Return Statements
 
+Return statements `stop`  the evaluation of a series of statements and leave behind the value thiere expression has evaluated to.
+
+Here is a top-level return statement in monkey program:
+
+```js
+5 * 5 * 5
+return 10
+10 * 10 * 10
+```
+
+When evaluated this program should return 10.If these statements were the body of a function, calling the function should evaluate to 10.The important thing is that the last line, 9 * 9 * 9 expression, is never going to evaluated.
+
+In Go, in order to support return statements, we'll be passing by a "return value" through our evaluator.Whenever we encounter a `return` we'll wrap the value it's supposed to return inside an object, so we can keep track of it.And we need to keep track with it so we can decide whether to stop evaluation or not.
 
 
 

@@ -12,13 +12,15 @@ import (
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evalStatements(node.Statements)
+		return evalStatements(node.Statements, false)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expr)
 	case *ast.IfExpression:
 		return evalIfExpression(node)
 	case *ast.BlockStatement:
-		return evalStatements(node.Statements)
+		return evalStatements(node.Statements, true)
+	case *ast.ReturnStatement:
+		return evalReturnStatement(node)
 	case *ast.BooleanExpression:
 		return evalBooleanLiteral(node)
 	case *ast.IntegerLiteral:
@@ -27,6 +29,8 @@ func Eval(node ast.Node) object.Object {
 		return evalPrefixExpression(node)
 	case *ast.InfixExpression:
 		return evalInfixExpression(node)
+	case *ast.LetStatement:
+		return evalLetStatement(node)
 	default:
 		panic(fmt.Errorf("error node type for [%s]", reflect.TypeOf(node).String()))
 	}
@@ -168,11 +172,29 @@ func nativeBoolean(input bool) object.Object {
 	}
 }
 
-func evalStatements(stmts []ast.Statement) object.Object {
+func evalLetStatement(letStatement *ast.LetStatement) object.Object {
+	// TODO support let statement
+	return object.NativeNull
+}
+
+func evalReturnStatement(returnStmt *ast.ReturnStatement) object.Object {
+	return &object.Return{
+		Object: Eval(returnStmt.ReturnValue),
+	}
+}
+
+func evalStatements(stmts []ast.Statement, wrapReturn bool) object.Object {
 	var result object.Object
 	for _, stmt := range stmts {
-		// TODO a sequence of stmt should be evaluate
 		result = Eval(stmt)
+		if result != nil && result.Type() == object.ObjReturn {
+			if wrapReturn {
+				return result
+			} else {
+				r := result.(*object.Return)
+				return r.Object
+			}
+		}
 	}
 	return result
 }

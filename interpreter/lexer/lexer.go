@@ -94,6 +94,10 @@ func (l *Lexer) NextToken() (token.Token, error) {
 	return tok, err
 }
 
+func (l *Lexer) CurrentPos() int {
+	return l.position
+}
+
 func (l *Lexer) readIdentifier() token.Token {
 	cur := l.position
 	for l.isLetter() {
