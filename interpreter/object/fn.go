@@ -1,15 +1,27 @@
 package object
 
-// Subtract the behavior of the infix operator minus
+// Add the operation of the infix operator +
+type Add interface {
+	Object
+	Add(Object) Object
+}
+
+// Subtract the operation of the infix operator -
 type Subtract interface {
 	Object
 	Sub(Object) Object
 }
 
-// Multiply the behavior of the infix operator asterisk
+// Multiply the operation of the infix operator *
 type Multiply interface {
 	Object
 	Mul(Object) Object
+}
+
+// Divide the operation of the infix operator /
+type Divide interface {
+	Object
+	Divide(object Object) Object
 }
 
 type Equatable interface {

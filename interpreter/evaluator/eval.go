@@ -40,10 +40,14 @@ func evalInfixExpression(infix *ast.InfixExpression) object.Object {
 	lhsObj := Eval(infix.Lhs)
 	rhsObj := Eval(infix.Rhs)
 	switch infix.Operator {
+	case string(token.PLUS):
+		return evalAdd(lhsObj, rhsObj)
 	case string(token.SUB):
 		return evalSubtract(lhsObj, rhsObj)
 	case string(token.ASTERISK):
 		return evalMultiply(lhsObj, rhsObj)
+	case string(token.SLASH):
+		return evalDivide(lhsObj, rhsObj)
 	case string(token.GT):
 		return evalGreaterThan(lhsObj, rhsObj)
 	case string(token.LT):
@@ -82,6 +86,12 @@ func evalGreaterThan(lhsObj, rhsObj object.Object) object.Object {
 	return l.GreaterThan(r)
 }
 
+func evalAdd(lhsObj, rhsObj object.Object) object.Object {
+	l := lhsObj.(object.Add)
+	r := rhsObj.(object.Add)
+	return l.Add(r)
+}
+
 func evalSubtract(lhsObj, rhsObj object.Object) object.Object {
 	l := lhsObj.(object.Subtract)
 	r := rhsObj.(object.Subtract)
@@ -92,6 +102,12 @@ func evalMultiply(lhsObj, rhsObj object.Object) object.Object {
 	l := lhsObj.(object.Multiply)
 	r := rhsObj.(object.Multiply)
 	return l.Mul(r)
+}
+
+func evalDivide(lhsObj, rhsObj object.Object) object.Object {
+	l := lhsObj.(object.Divide)
+	r := rhsObj.(object.Divide)
+	return l.Divide(r)
 }
 
 func evalInfixExpressionIntegerLiteral(operator token.TokenType, lhsIntegerObj, rhsIntegerObj *object.Integer) object.Object {

@@ -35,6 +35,14 @@ func (i *Integer) Inspect() string {
 	return strconv.FormatInt(i.Value, 10)
 }
 
+func (i *Integer) Add(o Object) Object {
+	if other, ok := o.(*Integer); ok {
+		i.Value = i.Value + other.Value
+		return i
+	}
+	return NativeNull
+}
+
 func (i *Integer) Sub(o Object) Object {
 	if other, ok := o.(*Integer); ok {
 		i.Value = i.Value - other.Value
@@ -46,6 +54,14 @@ func (i *Integer) Sub(o Object) Object {
 func (i *Integer) Mul(o Object) Object {
 	if other, ok := o.(*Integer); ok {
 		i.Value = i.Value * other.Value
+		return i
+	}
+	return NativeNull
+}
+
+func (i *Integer) Divide(o Object) Object {
+	if other, ok := o.(*Integer); ok {
+		i.Value = i.Value / other.Value
 		return i
 	}
 	return NativeNull

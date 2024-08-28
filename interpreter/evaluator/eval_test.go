@@ -65,6 +65,26 @@ func TestEvalBooleanExpression(t *testing.T) {
 	}
 }
 
+func TestEvalIntegerExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{"1", 1},
+		{"1 + 1", 2},
+		{"123 - 100", 23},
+		{"328 * 21", 6888},
+		{"20 / 2", 10},
+		{"1 + 2 * 3 / 2 + 4", 8},
+		{"(1 + 2) * 6 / (2 * (4 + 5))", 1},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		testIntegerObject(t, evaluated, tt.expected)
+	}
+}
+
 func testEval(input string) object.Object {
 	newLexer := lexer.NewLexer(input)
 	newParser := parser.NewParser(*newLexer)
