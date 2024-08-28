@@ -110,6 +110,10 @@ func (i *Integer) LessThan(o Object) *Boolean {
 	return NativeFalse
 }
 
+func (i *Integer) Negative() Object {
+	return &Integer{Value: -i.Value}
+}
+
 type Boolean struct {
 	Value bool
 }
@@ -165,4 +169,16 @@ func (n *Return) Type() ObjType {
 
 func (n *Return) Inspect() string {
 	return n.Object.Inspect()
+}
+
+type Error struct {
+	Message string
+}
+
+func (e *Error) Type() ObjType {
+	return ObjError
+}
+
+func (e *Error) Inspect() string {
+	return e.Message
 }

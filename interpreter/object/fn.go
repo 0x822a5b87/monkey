@@ -35,3 +35,8 @@ type Comparable interface {
 	GreaterThan(Object) *Boolean
 	LessThan(Object) *Boolean
 }
+
+type Negative interface {
+	Object
+	Negative() Object
+}

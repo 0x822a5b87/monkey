@@ -356,9 +356,13 @@ When evaluated this program should return 10.If these statements were the body o
 
 In Go, in order to support return statements, we'll be passing by a "return value" through our evaluator.Whenever we encounter a `return` we'll wrap the value it's supposed to return inside an object, so we can keep track of it.And we need to keep track with it so we can decide whether to stop evaluation or not.
 
+### 3.8 - Abort!Abort!There's been a mistake!, or : Error Handling
 
+Remember all the `NativeNull` we were returning earlier and I said that you shouldn't worry and we'll come back to them? Here we are. It's time to implement some real error handling in monkey before it's too late and we'd have to backpedal too much.
 
+First of all, let's define what I mean with "real error handling".It is **not user-defined** exceptions.It's internal error handling.Errors for wrong operators, unsupported operations, and other user or internal error that may arise during execution.
 
+The error handling is implemented in nearly the same way as handling return statements is.
 
 
 

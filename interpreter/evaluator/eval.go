@@ -47,6 +47,12 @@ func evalBooleanLiteral(booleanExpression *ast.BooleanExpression) object.Object 
 func evalInfixExpression(infix *ast.InfixExpression) object.Object {
 	lhsObj := Eval(infix.Lhs)
 	rhsObj := Eval(infix.Rhs)
+
+	err := infixExpressionTypeCheck(infix.Operator, lhsObj, rhsObj)
+	if err != nil {
+		return err
+	}
+
 	switch infix.Operator {
 	case string(token.PLUS):
 		return evalAdd(lhsObj, rhsObj)
@@ -130,6 +136,12 @@ func evalInfixExpressionIntegerLiteral(operator token.TokenType, lhsIntegerObj, 
 }
 
 func evalPrefixExpression(prefix *ast.PrefixExpression) object.Object {
+	rhs := Eval(prefix.Right)
+	err := prefixExpressionTypeCheck(prefix.Operator, rhs)
+	if err != nil {
+		return err
+	}
+
 	switch prefix.Operator {
 	case string(token.BANG):
 		return evalBangOfPrefixExpression(prefix.Right)
@@ -142,10 +154,6 @@ func evalPrefixExpression(prefix *ast.PrefixExpression) object.Object {
 
 func evalMinusOfPrefixExpression(rightExpr ast.Expression) object.Object {
 	right := Eval(rightExpr)
-	if right.Type() != object.ObjInteger {
-		// TODO think of it, return NativeNull or panic
-		return object.NativeNull
-	}
 	integer := right.(*object.Integer)
 	return &object.Integer{Value: -integer.Value}
 }
@@ -187,13 +195,21 @@ func evalStatements(stmts []ast.Statement, wrapReturn bool) object.Object {
 	var result object.Object
 	for _, stmt := range stmts {
 		result = Eval(stmt)
-		if result != nil && result.Type() == object.ObjReturn {
+		if result == nil {
+			continue
+		}
+
+		if result.Type() == object.ObjReturn {
 			if wrapReturn {
 				return result
 			} else {
 				r := result.(*object.Return)
 				return r.Object
 			}
+		}
+
+		if result.Type() == object.ObjError {
+			return result
 		}
 	}
 	return result
@@ -235,4 +251,8 @@ func isTruthyObject(o object.Object) bool {
 	default:
 		return true
 	}
+}
+
+func newError(format string, a ...any) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
