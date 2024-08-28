@@ -7,15 +7,25 @@ import (
 
 const LiteralEof byte = 0
 
+// Info Lexer 相关的信息
+type Info struct {
+	RowNum int
+	ColNum int
+}
+
 type Lexer struct {
 	sourceCode   string
 	position     int  // current position in input(points to current char)
 	readPosition int  // current reading position in input(after current char)
 	ch           byte // current char under examination
+	Info         Info
 }
 
 func NewLexer(source string) *Lexer {
-	l := &Lexer{sourceCode: source}
+	l := &Lexer{sourceCode: source, Info: Info{
+		RowNum: 0,
+		ColNum: 0,
+	}}
 	// init lexer
 	l.readChar()
 	return l
@@ -94,8 +104,8 @@ func (l *Lexer) NextToken() (token.Token, error) {
 	return tok, err
 }
 
-func (l *Lexer) CurrentPos() int {
-	return l.position
+func (l *Lexer) CurInfo() Info {
+	return l.Info
 }
 
 func (l *Lexer) readIdentifier() token.Token {
@@ -145,6 +155,8 @@ func newToken(tokenType token.TokenType, ch byte) (token.Token, error) {
 }
 
 func (l *Lexer) readChar() {
+	l.incInfo()
+
 	if !l.hasNextChar() {
 		l.ch = LiteralEof
 	} else {
@@ -178,4 +190,14 @@ func (l *Lexer) skipWhitespace() {
 // curStr convert current ch to string, mainly for debugging
 func (l *Lexer) curStr() string {
 	return string(l.ch)
+}
+
+func (l *Lexer) incInfo() {
+	if l.ch == '\n' || l.ch == '\r' {
+		l.Info.RowNum++
+		l.Info.ColNum = 0
+		return
+	}
+
+	l.Info.ColNum++
 }

@@ -242,7 +242,8 @@ func (p *Parser) peekTokenIs(tokenType token.TokenType) bool {
 func (p *Parser) getPrecedence(tokenType token.TokenType) Precedence {
 	precedence, ok := p.precedences[tokenType]
 	if !ok {
-		panic(fmt.Errorf("precedence not found for type [%s], position = [%d]", tokenType, p.lex.CurrentPos()))
+		info := p.lex.CurInfo()
+		panic(fmt.Errorf("precedence not found for type [%s], row = [%d], col = [%d]", tokenType, info.RowNum, info.ColNum))
 	}
 	return precedence
 }
