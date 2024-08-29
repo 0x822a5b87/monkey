@@ -8,6 +8,12 @@ import (
 	"reflect"
 )
 
+const (
+	typeMismatchErrStr       = "type mismatch:"
+	unknownOperatorErrStr    = "unknown operator:"
+	identifierNotFoundErrStr = "identifier not found:"
+)
+
 var infixOperatorTypes map[string]any
 var prefixOperatorTypes map[string]any
 
@@ -85,7 +91,7 @@ func check4UnknownOperator(operator string, i any, objects ...object.Object) *ob
 
 func newTypeMismatchError(operator string, objects ...object.Object) *object.Error {
 	buffer := bytes.Buffer{}
-	buffer.WriteString("type mismatch:")
+	buffer.WriteString(typeMismatchErrStr)
 	for i, o := range objects {
 		buffer.WriteString(fmt.Sprintf(" %s", o.Type()))
 		if i != len(objects)-1 {
@@ -106,7 +112,7 @@ func newUnknownOperatorError(operator string, objects ...object.Object) *object.
 
 func newInfixUnknownOperatorError(operator string, objects ...object.Object) *object.Error {
 	buffer := bytes.Buffer{}
-	buffer.WriteString("unknown operator:")
+	buffer.WriteString(unknownOperatorErrStr)
 	for i, o := range objects {
 		buffer.WriteString(fmt.Sprintf(" %s", o.Type()))
 		if i != len(objects)-1 {
@@ -119,7 +125,7 @@ func newInfixUnknownOperatorError(operator string, objects ...object.Object) *ob
 
 func newPrefixUnknownOperatorError(operator string, o object.Object) *object.Error {
 	buffer := bytes.Buffer{}
-	buffer.WriteString("unknown operator:")
+	buffer.WriteString(unknownOperatorErrStr)
 	buffer.WriteString(fmt.Sprintf(" %s%s", operator, o.Type()))
 	return newError(buffer.String())
 }

@@ -208,10 +208,10 @@ func TestErrorHandling(t *testing.T) {
 		`,
 			"unknown operator: BOOLEAN + BOOLEAN",
 		},
-		//{
-		//	"foobar",
-		//	"identifier not found: foobar",
-		//},
+		{
+			"foobar",
+			"identifier not found: foobar",
+		},
 		//{
 		//	`{"name": "Monkey"}[fn(x) { x }];`,
 		//	"unusable as hash key: FUNCTION",
@@ -239,11 +239,29 @@ func TestErrorHandling(t *testing.T) {
 	}
 }
 
+func TestLetStatement(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected int64
+	}{
+		{"let a = 5; a;", 5},
+		{"let a = 5 * 5; a;", 25},
+		{"let a = 5; let b = a; b;", 5},
+		{"let a = 5; let b = a; let c= a + b + 10; c;", 20},
+	}
+
+	for _, tc := range testCases {
+		eval := testEval(tc.input)
+		testIntegerObject(t, eval, tc.expected)
+	}
+}
+
 func testEval(input string) object.Object {
 	newLexer := lexer.NewLexer(input)
 	newParser := parser.NewParser(*newLexer)
 	program := newParser.ParseProgram()
-	return Eval(program)
+	env := object.NewEnvironment()
+	return Eval(program, env)
 }
 
 func testIntegerObject(t *testing.T, obj object.Object, expected int64) {

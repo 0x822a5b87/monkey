@@ -364,6 +364,55 @@ First of all, let's define what I mean with "real error handling".It is **not us
 
 The error handling is implemented in nearly the same way as handling return statements is.
 
+### 3.9 - Bindings & The Environment
+
+Up next we're going to add bindings to our interpreter by adding support for let statemens.But not only do we need to support let statements, no, we need to support the evaluation of identifiers, too.Let's say we have evaluated the following piece of code:
+
+```js
+let x = 5 * 5;
+```
+
+Only adding support for the evaluation of this statement is not enought. We also need to make sure that the `x` evaluates to `25` after interpreting the line above.
+
+We evaluate let statements by evaluating their value-produced expression and keeping track of the produced value under the specified name.To evaluate identifiers we check if we already have a value bound to the name.If we do, the identifier evaluates to the value, and if we don't, we return an error.
+
+The first thing we have need to `Eval` the expression of the let statement:
+
+```js
+func Eval(node ast.Node) object.Object {
+	switch node := node.(type) {
+	// ...
+	case *ast.LetStatement:
+		return evalLetStatement(node)
+	// ...
+	}
+}
+```
+
+The question is : How tdo we keep track of values? We have the value and we have the name we should bind ti too, `node.Name.Value`.How do we associate one with the other?
+
+**This is where something called the environment comes into play. The environment is what we use to keep track of value by associating them with a name.**
+
+```go
+func NewEnvironment() *Environment {
+	return &Environment{store: make(map[string]Object)}
+}
+
+type Environment struct {
+	store map[string]Object
+}
+
+func (env *Environment) Get(name string) Object {
+	return env.store[name]
+}
+
+func (env *Environment) Set(name string, obj Object) {
+	env.store[name] = obj
+}
+```
+
+
+
 
 
 

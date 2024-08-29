@@ -3,6 +3,7 @@ package repl
 import (
 	"0x822a5b87/monkey/evaluator"
 	"0x822a5b87/monkey/lexer"
+	"0x822a5b87/monkey/object"
 	"0x822a5b87/monkey/parser"
 	"bufio"
 	"fmt"
@@ -13,6 +14,7 @@ const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 
 	for {
 		fmt.Print(PROMPT)
@@ -28,7 +30,7 @@ func Start(in io.Reader, out io.Writer) {
 		p := parser.NewParser(*l)
 		program := p.ParseProgram()
 		for _, stmt := range program.Statements {
-			obj := evaluator.Eval(stmt)
+			obj := evaluator.Eval(stmt, env)
 			_, err := io.WriteString(out, obj.Inspect())
 			fmt.Println()
 			if err != nil {
