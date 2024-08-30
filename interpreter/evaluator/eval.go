@@ -33,6 +33,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalLetStatement(node, env)
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
+	case *ast.FnLiteral:
+		return evalFnLiteral(node, env)
+	case *ast.CallExpression:
+		return evalCallExpression(node, env)
 	default:
 		panic(fmt.Errorf("error node type for [%s]", reflect.TypeOf(node).String()))
 	}
@@ -191,6 +195,36 @@ func evalLetStatement(letStatement *ast.LetStatement, env *object.Environment) o
 	return obj
 }
 
+func evalCallExpression(call *ast.CallExpression, env *object.Environment) object.Object {
+
+	fn, err := getFnObject(call, env)
+	if err != nil {
+		return err
+	}
+
+	if len(call.Arguments) != len(fn.Params) {
+		return newError("%s expected [%d], got [%d]", paramsNumberMismatchErrStr, len(call.Arguments), len(fn.Params))
+	}
+
+	subEnv := object.NewEnvironment(env)
+	for i, arg := range call.Arguments {
+		// TODO add scope for block
+		value := Eval(arg, subEnv)
+		// bind argument value to params
+		subEnv.Set(fn.Params[i].String(), value)
+	}
+
+	return Eval(fn.Body, subEnv)
+}
+
+func evalFnLiteral(fnLiteral *ast.FnLiteral, env *object.Environment) *object.Fn {
+	return &object.Fn{
+		Params: fnLiteral.Parameters,
+		Body:   fnLiteral.Body,
+		Env:    env,
+	}
+}
+
 func evalIdentifier(identifier *ast.Identifier, env *object.Environment) object.Object {
 	value, ok := env.Get(identifier.Value)
 	if !ok {
@@ -269,4 +303,26 @@ func isTruthyObject(o object.Object) bool {
 
 func newError(format string, a ...any) *object.Error {
 	return &object.Error{Message: fmt.Sprintf(format, a...)}
+}
+
+func getFnObject(call *ast.CallExpression, env *object.Environment) (*object.Fn, *object.Error) {
+	fnName, ok := call.Fn.(*ast.Identifier)
+	if ok {
+		bindingObj, ok := env.Get(fnName.Value)
+		if !ok {
+			return nil, newError("%s %s", identifierNotFoundErrStr, call.Fn.String())
+		}
+		fn, ok := bindingObj.(*object.Fn)
+		if !ok {
+			return nil, newError("%s from %s to %s", typeMismatchErrStr, bindingObj.Type(), object.ObjFunction)
+		}
+		return fn, nil
+	}
+
+	fn := call.Fn.(*ast.FnLiteral)
+	return &object.Fn{
+		Params: fn.Parameters,
+		Body:   fn.Body,
+		Env:    env,
+	}, nil
 }

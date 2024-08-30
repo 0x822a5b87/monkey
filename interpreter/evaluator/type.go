@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	typeMismatchErrStr       = "type mismatch:"
-	unknownOperatorErrStr    = "unknown operator:"
-	identifierNotFoundErrStr = "identifier not found:"
+	typeMismatchErrStr         = "type mismatch:"
+	unknownOperatorErrStr      = "unknown operator:"
+	identifierNotFoundErrStr   = "identifier not found:"
+	paramsNumberMismatchErrStr = "number of parameters mismatch:"
 )
 
 var infixOperatorTypes map[string]any

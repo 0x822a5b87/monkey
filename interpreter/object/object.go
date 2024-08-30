@@ -1,6 +1,9 @@
 package object
 
 import (
+	"0x822a5b87/monkey/ast"
+	"0x822a5b87/monkey/util"
+	"bytes"
 	"fmt"
 	"strconv"
 )
@@ -181,4 +184,25 @@ func (e *Error) Type() ObjType {
 
 func (e *Error) Inspect() string {
 	return e.Message
+}
+
+type Fn struct {
+	Params []*ast.Identifier
+	Body   *ast.BlockStatement
+	Env    *Environment
+}
+
+func (f *Fn) Type() ObjType {
+	return ObjFunction
+}
+
+func (f *Fn) Inspect() string {
+	buffer := bytes.Buffer{}
+	buffer.WriteString("fn(")
+	buffer.WriteString(util.AnyJoin(" ,", f.Params))
+	buffer.WriteString(")")
+	buffer.WriteString("{\n")
+	buffer.WriteString(f.Body.String())
+	buffer.WriteString("}")
+	return buffer.String()
 }

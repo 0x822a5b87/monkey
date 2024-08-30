@@ -411,6 +411,28 @@ func (env *Environment) Set(name string, obj Object) {
 }
 ```
 
+### 3.10 - Functions & Function Calls
+
+We are going to add support for functions and function calls to our interpreter.When we're done with this section, we'll be able to do this in our REPL.
+
+```python
+>> let add = fn(a, b, c, d) { return a + b + c + d; }
+>> add(1, 2, 3, 4)
+10
+
+>> let addThree = fn(x) { return x + 3; };
+>> addThree(3);
+6
+
+>> let max = fn(x, y) { if (x > y) { x; } else { y; } }
+>> max(5, 10)
+10
+
+>> let factorial = fn(n) { if (n == 0) { 1 } else { n * factorial(n - 1) ;} };
+>>factorial(5)
+120
+```
+
 
 
 

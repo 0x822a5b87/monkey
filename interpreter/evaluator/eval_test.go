@@ -27,9 +27,9 @@ func TestEvalInteger(t *testing.T) {
 		},
 	}
 
-	for _, val := range tests {
+	for i, val := range tests {
 		obj := testEval(val.input)
-		testIntegerObject(t, obj, val.expected)
+		testIntegerObject(t, i, obj, val.expected)
 	}
 }
 
@@ -79,9 +79,9 @@ func TestEvalIntegerExpression(t *testing.T) {
 		{"(1 + 2) * 6 / (2 * (4 + 5))", 1},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		evaluated := testEval(tt.input)
-		testIntegerObject(t, evaluated, tt.expected)
+		testIntegerObject(t, i, evaluated, tt.expected)
 	}
 }
 
@@ -99,11 +99,11 @@ func TestIfElseExpressions(t *testing.T) {
 		{"if (1 < 2) { 10 } else { 20 }", 10},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		evaluated := testEval(tt.input)
 		integer, ok := tt.expected.(int)
 		if ok {
-			testIntegerObject(t, evaluated, int64(integer))
+			testIntegerObject(t, i, evaluated, int64(integer))
 		} else {
 			testNullObject(t, evaluated)
 		}
@@ -153,9 +153,9 @@ if (10 > 1) {
 		//		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		evaluated := testEval(tt.input)
-		testIntegerObject(t, evaluated, tt.expected)
+		testIntegerObject(t, i, evaluated, tt.expected)
 	}
 }
 
@@ -250,34 +250,93 @@ func TestLetStatement(t *testing.T) {
 		{"let a = 5; let b = a; let c= a + b + 10; c;", 20},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		eval := testEval(tc.input)
-		testIntegerObject(t, eval, tc.expected)
+		testIntegerObject(t, i, eval, tc.expected)
 	}
+}
+
+func TestFunctionObject(t *testing.T) {
+	input := "fn(x) { x + 2; };"
+
+	evaluated := testEval(input)
+	fn, ok := evaluated.(*object.Fn)
+	if !ok {
+		t.Fatalf("object is not Function. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	if len(fn.Params) != 1 {
+		t.Fatalf("function has wrong parameters. Parameters=%+v", fn.Params)
+	}
+
+	if fn.Params[0].String() != "x" {
+		t.Fatalf("parameter is not 'x'. got=%q", fn.Params[0])
+	}
+
+	expectedBody := "(x + 2)"
+
+	if fn.Body.String() != expectedBody {
+		t.Fatalf("body is not %q. got=%q", expectedBody, fn.Body.String())
+	}
+}
+
+func TestFunctionApplication(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{"let identity = fn(x) { x; }; identity(5);", 5},
+		{"let identity = fn(x) { return x; }; identity(5);", 5},
+		{"let double = fn(x) { x * 2; }; double(5);", 10},
+		{"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+		{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+		{"fn(x) { x; }(5)", 5},
+	}
+
+	for i, tt := range tests {
+		testIntegerObject(t, i, testEval(tt.input), tt.expected)
+	}
+}
+
+func TestEnclosingEnvironments(t *testing.T) {
+	input := `
+let first = 10;
+let second = 10;
+let third = 10;
+
+let ourFunction = fn(first) {
+  let second = 20;
+
+  first + second + third;
+};
+
+ourFunction(20) + first + second;`
+
+	testIntegerObject(t, 0, testEval(input), 70)
 }
 
 func testEval(input string) object.Object {
 	newLexer := lexer.NewLexer(input)
 	newParser := parser.NewParser(*newLexer)
 	program := newParser.ParseProgram()
-	env := object.NewEnvironment()
+	env := object.NewEnvironment(nil)
 	return Eval(program, env)
 }
 
-func testIntegerObject(t *testing.T, obj object.Object, expected int64) {
+func testIntegerObject(t *testing.T, testCaseIndex int, obj object.Object, expected int64) {
 	if obj == nil {
-		t.Fatalf("exepct not nil, got nil")
+		t.Fatalf("test case [%d], exepct not nil, got nil", testCaseIndex)
 	}
 
 	if obj.Type() != object.ObjInteger {
-		t.Fatalf("expect ObjInteger, got [%s]", string(obj.Type()))
+		t.Fatalf("test case [%d], expect ObjInteger, got [%s]", testCaseIndex, string(obj.Type()))
 	}
 	integerObj, ok := obj.(*object.Integer)
 	if !ok {
-		t.Fatalf("expecte Integer, got [%s]", reflect.TypeOf(obj))
+		t.Fatalf("test case [%d], expecte Integer, got [%s]", testCaseIndex, reflect.TypeOf(obj))
 	}
 	if integerObj.Value != expected {
-		t.Fatalf("expect [%d], got [%d]", expected, integerObj.Value)
+		t.Fatalf("test case [%d], expect [%d], got [%d]", testCaseIndex, expected, integerObj.Value)
 	}
 }
 
