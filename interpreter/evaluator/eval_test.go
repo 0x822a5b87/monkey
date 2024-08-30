@@ -315,6 +315,19 @@ ourFunction(20) + first + second;`
 	testIntegerObject(t, 0, testEval(input), 70)
 }
 
+func TestClosures(t *testing.T) {
+	input := `
+let newAdder = fn(x) {
+	fn(y) { x + y };
+};
+
+let x = 10;
+let addTwo = newAdder(2);
+addTwo(2);
+`
+	testIntegerObject(t, 0, testEval(input), 4)
+}
+
 func testEval(input string) object.Object {
 	newLexer := lexer.NewLexer(input)
 	newParser := parser.NewParser(*newLexer)

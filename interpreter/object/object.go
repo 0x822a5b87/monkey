@@ -203,6 +203,6 @@ func (f *Fn) Inspect() string {
 	buffer.WriteString(")")
 	buffer.WriteString("{\n")
 	buffer.WriteString(f.Body.String())
-	buffer.WriteString("}")
+	buffer.WriteString("\n}")
 	return buffer.String()
 }

@@ -206,15 +206,20 @@ func evalCallExpression(call *ast.CallExpression, env *object.Environment) objec
 		return newError("%s expected [%d], got [%d]", paramsNumberMismatchErrStr, len(call.Arguments), len(fn.Params))
 	}
 
-	subEnv := object.NewEnvironment(env)
+	// this is important because a function has its own execution environment, rather than the environment
+	// where the function is called.
+	subEnv := object.NewEnvironment(fn.Env)
+
+	// env for arguments
+	arguments := object.NewEnvironment(subEnv)
 	for i, arg := range call.Arguments {
 		// TODO add scope for block
-		value := Eval(arg, subEnv)
+		value := Eval(arg, arguments)
 		// bind argument value to params
-		subEnv.Set(fn.Params[i].String(), value)
+		arguments.Set(fn.Params[i].String(), value)
 	}
 
-	return Eval(fn.Body, subEnv)
+	return Eval(fn.Body, arguments)
 }
 
 func evalFnLiteral(fnLiteral *ast.FnLiteral, env *object.Environment) *object.Fn {
