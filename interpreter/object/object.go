@@ -219,3 +219,8 @@ func (s *StringObj) Type() ObjType {
 func (s *StringObj) Inspect() string {
 	return s.Value
 }
+
+func (s *StringObj) Add(object Object) Object {
+	s.Value = s.Value + object.Inspect()
+	return s
+}

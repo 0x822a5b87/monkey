@@ -328,6 +328,18 @@ addTwo(2);
 	testIntegerObject(t, 0, testEval(input), 4)
 }
 
+func TestStringConcatenation(t *testing.T) {
+	input := `"Hello" + " " + "World!"`
+	evaluated := testEval(input)
+	str, ok := evaluated.(*object.StringObj)
+	if !ok {
+		t.Fatalf("object is not String. got=%T (%+v)", evaluated, evaluated)
+	}
+	if str.Value != "Hello World!" {
+		t.Errorf("String has wrong value. got=%q", str.Value)
+	}
+}
+
 func testEval(input string) object.Object {
 	newLexer := lexer.NewLexer(input)
 	newParser := parser.NewParser(*newLexer)
