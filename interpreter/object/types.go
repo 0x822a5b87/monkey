@@ -8,4 +8,5 @@ const (
 	ObjError    ObjType = "ERROR"
 	ObjFunction ObjType = "FUNCTION"
 	ObjString   ObjType = "STRING"
+	ObjBuiltIn  ObjType = "BUILT_IN"
 )

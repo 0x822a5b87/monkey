@@ -328,6 +328,27 @@ addTwo(2);
 	testIntegerObject(t, 0, testEval(input), 4)
 }
 
+func TestClosures2(t *testing.T) {
+	input := `
+let self = fn(x) {
+	return x;
+};
+let x = 10;
+self(x);
+`
+	testIntegerObject(t, 0, testEval(input), 10)
+}
+
+func TestClosures3(t *testing.T) {
+	input := `
+let self = fn(x) {
+	return x;
+}(10);
+self;
+`
+	testIntegerObject(t, 0, testEval(input), 10)
+}
+
 func TestStringConcatenation(t *testing.T) {
 	input := `"Hello" + " " + "World!"`
 	evaluated := testEval(input)
@@ -337,6 +358,38 @@ func TestStringConcatenation(t *testing.T) {
 	}
 	if str.Value != "Hello World!" {
 		t.Errorf("String has wrong value. got=%q", str.Value)
+	}
+}
+
+func TestBuiltInFunctions(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected any
+	}{
+		{`len("")`, &object.Integer{Value: 0}},
+		{`len("four")`, &object.Integer{Value: 4}},
+		{`len("hello world")`, &object.Integer{Value: 11}},
+		{`len(1)`, "argument to `len` not supported, got INTEGER"},
+		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
+	}
+
+	for i, testCase := range testCases {
+		evaluated := testEval(testCase.input)
+		switch expected := testCase.expected.(type) {
+		case *object.Integer:
+			v := testCase.expected.(*object.Integer)
+			testIntegerObject(t, i, evaluated, v.Value)
+		case string:
+			errObj, ok := evaluated.(*object.Error)
+			if !ok {
+				t.Fatalf("index = [%d], object is not Error. got=%T (%+v)", i, evaluated, evaluated)
+			}
+			if errObj.Message != expected {
+				t.Errorf("index = [%d], wrong error message. expected=%q, got=%q", i, expected, errObj.Message)
+			}
+		default:
+			t.Errorf("index = [%d], unexpected return type. expected=%q, got=%q", i, expected, evaluated.Type())
+		}
 	}
 }
 

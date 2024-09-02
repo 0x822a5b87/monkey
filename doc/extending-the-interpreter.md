@@ -53,3 +53,5 @@ func (l *Lexer) readString() string {
 }
 ```
 
+### 4.3 - Built-in Functions
+
