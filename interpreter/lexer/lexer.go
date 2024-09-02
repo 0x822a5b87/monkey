@@ -3,6 +3,7 @@ package lexer
 import (
 	"0x822a5b87/monkey/common"
 	"0x822a5b87/monkey/token"
+	"bytes"
 )
 
 const LiteralEof byte = 0
@@ -84,6 +85,9 @@ func (l *Lexer) NextToken() (token.Token, error) {
 		tok, err = newToken(token.GT, l.ch)
 	case '<':
 		tok, err = newToken(token.LT, l.ch)
+	case '"':
+		str := l.readString()
+		tok, err = newStrToken(str)
 	default:
 		if l.isLetter() {
 			tok, err = l.readIdentifier(), nil
@@ -154,6 +158,13 @@ func newToken(tokenType token.TokenType, ch byte) (token.Token, error) {
 	}, nil
 }
 
+func newStrToken(str string) (token.Token, error) {
+	return token.Token{
+		Type:    token.String,
+		Literal: str,
+	}, nil
+}
+
 func (l *Lexer) readChar() {
 	l.incInfo()
 
@@ -185,6 +196,36 @@ func (l *Lexer) skipWhitespace() {
 	for l.ch == ' ' || l.ch == '\n' || l.ch == '\t' || l.ch == '\r' {
 		l.readChar()
 	}
+}
+
+func (l *Lexer) readString() string {
+	// skip left quote
+	l.readChar()
+
+	buffer := bytes.Buffer{}
+
+	var end = false
+	// actually, we should parse the string with a state machine instead of peek char
+	for !end {
+		switch l.curCh() {
+		case '\\':
+			// in this case, whatever the next character is, we simply consume it as a basic char
+			l.readChar()
+			buffer.WriteByte(l.curCh())
+			l.readChar()
+		case '"':
+			end = true
+		default:
+			buffer.WriteByte(l.curCh())
+			l.readChar()
+		}
+	}
+
+	return buffer.String()
+}
+
+func (l *Lexer) curCh() byte {
+	return l.sourceCode[l.position]
 }
 
 // curStr convert current ch to string, mainly for debugging

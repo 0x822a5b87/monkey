@@ -206,3 +206,16 @@ func (f *Fn) Inspect() string {
 	buffer.WriteString("\n}")
 	return buffer.String()
 }
+
+type StringObj struct {
+	Value string
+	Env   *Environment
+}
+
+func (s *StringObj) Type() ObjType {
+	return ObjString
+}
+
+func (s *StringObj) Inspect() string {
+	return s.Value
+}

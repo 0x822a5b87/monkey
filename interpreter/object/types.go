@@ -7,4 +7,5 @@ const (
 	ObjReturn   ObjType = "RETURN"
 	ObjError    ObjType = "ERROR"
 	ObjFunction ObjType = "FUNCTION"
+	ObjString   ObjType = "STRING"
 )

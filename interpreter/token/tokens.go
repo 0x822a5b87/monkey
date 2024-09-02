@@ -28,6 +28,7 @@ const (
 const (
 	IDENTIFIER TokenType = "IDENTIFIER" // identifier
 	INT        TokenType = "INT"        // int
+	String     TokenType = "STRING"     // string
 )
 
 // operators

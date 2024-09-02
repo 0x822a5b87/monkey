@@ -37,6 +37,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalFnLiteral(node, env)
 	case *ast.CallExpression:
 		return evalCallExpression(node, env)
+	case *ast.StringLiteral:
+		return evalStringLiteral(node)
 	default:
 		panic(fmt.Errorf("error node type for [%s]", reflect.TypeOf(node).String()))
 	}
@@ -220,6 +222,12 @@ func evalCallExpression(call *ast.CallExpression, env *object.Environment) objec
 	}
 
 	return Eval(fn.Body, arguments)
+}
+
+func evalStringLiteral(stringLiteral *ast.StringLiteral) object.Object {
+	return &object.StringObj{
+		Value: stringLiteral.Literal,
+	}
 }
 
 func evalFnLiteral(fnLiteral *ast.FnLiteral, env *object.Environment) *object.Fn {

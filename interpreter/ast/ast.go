@@ -297,3 +297,18 @@ func (f *FnLiteral) String() string {
 }
 
 func (f *FnLiteral) expressionNode() {}
+
+type StringLiteral struct {
+	Token   token.Token
+	Literal string
+}
+
+func (s *StringLiteral) TokenLiteral() string {
+	return s.Literal
+}
+
+func (s *StringLiteral) String() string {
+	return s.Literal
+}
+
+func (s *StringLiteral) expressionNode() {}

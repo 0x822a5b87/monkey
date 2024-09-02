@@ -33,6 +33,11 @@ if (five < ten) {
 
 return five != 10;
 return five == five;
+
+"foobar";
+"foo bar";
+
+let y = "this is a sentence for testing! I want to say \"Hello World\"!";
 `
 
 	expectedTokens := []expectedToken{
@@ -154,6 +159,18 @@ return five == five;
 		{token.IDENTIFIER, "five"},
 		{token.EQ, "=="},
 		{token.IDENTIFIER, "five"},
+		{token.SEMICOLON, ";"},
+
+		{token.String, "foobar"},
+		{token.SEMICOLON, ";"},
+
+		{token.String, "foo bar"},
+		{token.SEMICOLON, ";"},
+
+		{token.LET, "let"},
+		{token.IDENTIFIER, "y"},
+		{token.ASSIGN, "="},
+		{token.String, `this is a sentence for testing! I want to say "Hello World"!`},
 		{token.SEMICOLON, ";"},
 	}
 
