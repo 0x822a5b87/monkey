@@ -332,10 +332,19 @@ func getFnObject(call *ast.CallExpression, env *object.Environment) (*object.Fn,
 		return fn, nil
 	}
 
-	fn := call.Fn.(*ast.FnLiteral)
-	return &object.Fn{
-		Params: fn.Parameters,
-		Body:   fn.Body,
-		Env:    env,
-	}, nil
+	fn, ok := call.Fn.(*ast.FnLiteral)
+	if ok {
+		return &object.Fn{
+			Params: fn.Parameters,
+			Body:   fn.Body,
+			Env:    env,
+		}, nil
+	}
+
+	callExpression, ok := call.Fn.(*ast.CallExpression)
+	if ok {
+		return getFnObject(callExpression, env)
+	}
+
+	panic("unknown call expression")
 }
