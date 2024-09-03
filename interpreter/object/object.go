@@ -238,6 +238,10 @@ func (s *StringObj) Index(o Object) Object {
 	return &StringObj{Value: string(rune(ch))}
 }
 
+func (s *StringObj) Len() Integer {
+	return Integer{Value: int64(len(s.Value))}
+}
+
 type Array struct {
 	Elements []Object
 }
@@ -267,4 +271,8 @@ func (a *Array) Index(o Object) Object {
 		return NativeNull
 	}
 	return a.Elements[other.Value]
+}
+
+func (a *Array) Len() Integer {
+	return Integer{Value: int64(len(a.Elements))}
 }

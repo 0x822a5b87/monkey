@@ -494,7 +494,7 @@ func testIntegerObject(t *testing.T, testCaseIndex int, obj object.Object, expec
 	}
 
 	if obj.Type() != object.ObjInteger {
-		t.Fatalf("test case [%d], expect ObjInteger, got [%s]", testCaseIndex, string(obj.Type()))
+		t.Fatalf("test case [%d], expect ObjInteger, got [%s], msg [%s]", testCaseIndex, string(obj.Type()), obj.Inspect())
 	}
 	integerObj, ok := obj.(*object.Integer)
 	if !ok {

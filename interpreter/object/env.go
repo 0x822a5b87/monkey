@@ -51,10 +51,10 @@ func init() {
 		}
 
 		obj := objs[0]
-		str, ok := obj.(*StringObj)
+		str, ok := obj.(Len)
 		if !ok {
 			return newWrongArgumentTypeError(builtInFnNameLet, obj.Type())
 		}
-		return &Integer{Value: int64(len(str.Value))}
+		return &Integer{Value: str.Len().Value}
 	}})
 }

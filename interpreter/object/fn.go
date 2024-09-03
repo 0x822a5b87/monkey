@@ -45,3 +45,8 @@ type Index interface {
 	Object
 	Index(Object) Object
 }
+
+type Len interface {
+	Object
+	Len() Integer
+}

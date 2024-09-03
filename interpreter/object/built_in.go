@@ -13,6 +13,3 @@ func (b *BuiltIn) Type() ObjType {
 func (b *BuiltIn) Inspect() string {
 	return "built-in function"
 }
-
-type BuiltInFn struct {
-}
