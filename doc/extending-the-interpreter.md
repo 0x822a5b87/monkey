@@ -55,3 +55,113 @@ func (l *Lexer) readString() string {
 
 ### 4.3 - Built-in Functions
 
+```go
+func evalCallExpression(call *ast.CallExpression, env *object.Environment) object.Object {
+	fnOrBuiltIn, err := getFnOrBuiltIn(call, env)
+	if err != nil {
+		return err
+	}
+
+	switch fnValue := fnOrBuiltIn.(type) {
+	case *object.Fn:
+		return evalFn(call, fnValue)
+	case *object.BuiltIn:
+		return evalBuiltIn(call, fnValue, env)
+	default:
+		return object.NativeNull
+	}
+}
+
+func getFnOrBuiltIn(call *ast.CallExpression, env *object.Environment) (object.Object, *object.Error) {
+	fnName, ok := call.Fn.(*ast.Identifier)
+	if ok {
+		fn := Eval(fnName, env)
+		switch function := fn.(type) {
+		case *object.BuiltIn:
+			return function, nil
+		case *object.Fn:
+			return function, nil
+		}
+		return nil, newError("%s from %s to %s", typeMismatchErrStr, fn.Type(), object.ObjFunction)
+	}
+	// maybe a closure
+	fnLiteral, ok := call.Fn.(*ast.FnLiteral)
+	if ok {
+		fn := Eval(fnLiteral, env)
+		return fn, nil
+	}
+
+	panic("unknown call expression")
+}
+
+```
+
+### 4.4 - Array
+
+The data type we're going to add to our monkey interpreter in this section is the array.
+
+```js
+let monkeyArray = ["hello", "world", 28, fn(x) { x * x };];
+```
+
+In this section we'll alose add support for arrays to our newly added `len` function and also add a few more built-in functions that work with arrays.
+
+```js
+let monekyArray = ["one", "two", "three"];
+len(monkeyArray);
+```
+
+The basis for our implementation of the monkey array in our interpreter wil be a Go slice of type `[]object.Object`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
