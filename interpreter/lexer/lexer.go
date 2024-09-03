@@ -85,6 +85,10 @@ func (l *Lexer) NextToken() (token.Token, error) {
 		tok, err = newToken(token.GT, l.ch)
 	case '<':
 		tok, err = newToken(token.LT, l.ch)
+	case '[':
+		tok, err = newToken(token.LBRACKET, l.ch)
+	case ']':
+		tok, err = newToken(token.RBRACKET, l.ch)
 	case '"':
 		str := l.readString()
 		tok, err = newStrToken(str)

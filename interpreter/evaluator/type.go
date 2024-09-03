@@ -74,7 +74,7 @@ func checkForTypeMismatchOperator(operator string, objects ...object.Object) *ob
 	return nil
 }
 
-// check4UnknownOperator 检查objects是否都实现了接口i
+// check4UnknownOperator 检查objects是否都实现了接口
 func check4UnknownOperator(operator string, i any, objects ...object.Object) *object.Error {
 	interfaceType := reflect.TypeOf(i).Elem()
 	for _, o := range objects {

@@ -9,4 +9,5 @@ const (
 	ObjFunction ObjType = "FUNCTION"
 	ObjString   ObjType = "STRING"
 	ObjBuiltIn  ObjType = "BUILT_IN"
+	ObjArray    ObjType = "ARRAY"
 )

@@ -40,3 +40,8 @@ type Negative interface {
 	Object
 	Negative() Object
 }
+
+type Index interface {
+	Object
+	Index(Object) Object
+}

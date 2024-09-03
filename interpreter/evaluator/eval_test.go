@@ -393,6 +393,93 @@ func TestBuiltInFunctions(t *testing.T) {
 	}
 }
 
+func TestArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Array)
+	if !ok {
+		t.Fatalf("object is not Array. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	if len(result.Elements) != 3 {
+		t.Fatalf("array has wrong num of elements. got=%d",
+			len(result.Elements))
+	}
+
+	testIntegerObject(t, 0, result.Elements[0], 1)
+	testIntegerObject(t, 0, result.Elements[1], 4)
+	testIntegerObject(t, 0, result.Elements[2], 6)
+}
+
+func TestArrayIndexExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		//{
+		//	"[1, 2, 3][0]",
+		//	1,
+		//},
+		//{
+		//	"[1, 2, 3][1]",
+		//	2,
+		//},
+		//{
+		//	"[1, 2, 3][2]",
+		//	3,
+		//},
+		//{
+		//	"let i = 0; [1][i];",
+		//	1,
+		//},
+		//{
+		//	"[1, 2, 3][1 + 1];",
+		//	3,
+		//},
+		//{
+		//	"let myArray = [1, 2, 3]; myArray[2];",
+		//	3,
+		//},
+		//{
+		//	"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+		//	6,
+		//},
+		//{
+		//	"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+		//	2,
+		//},
+		//{
+		//	"[1, 2, 3][3]",
+		//	nil,
+		//},
+		//{
+		//	"[1, 2, 3][-1]",
+		//	nil,
+		//},
+		{
+			`"hello world!"[0]`,
+			"h",
+		},
+		{
+			`"hello world!"[11]`,
+			"!",
+		},
+	}
+
+	for i, tt := range tests {
+		evaluated := testEval(tt.input)
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, i, evaluated, int64(expected))
+		case string:
+			testStringObj(t, i, evaluated, expected)
+		default:
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
 func testEval(input string) object.Object {
 	newLexer := lexer.NewLexer(input)
 	newParser := parser.NewParser(*newLexer)
@@ -415,6 +502,25 @@ func testIntegerObject(t *testing.T, testCaseIndex int, obj object.Object, expec
 	}
 	if integerObj.Value != expected {
 		t.Fatalf("test case [%d], expect [%d], got [%d]", testCaseIndex, expected, integerObj.Value)
+	}
+}
+
+func testStringObj(t *testing.T, testCaseIndex int, obj object.Object, expected string) {
+	if obj == nil {
+		t.Fatalf("test case [%d], exepct not nil, got nil", testCaseIndex)
+	}
+
+	if obj.Type() != object.ObjString {
+		t.Fatalf("test case [%d], expect ObjInteger, got [%s]", testCaseIndex, string(obj.Type()))
+	}
+
+	str, ok := obj.(*object.StringObj)
+	if !ok {
+		t.Fatalf("test case [%d], expecte Integer, got [%s]", testCaseIndex, reflect.TypeOf(obj))
+	}
+
+	if str.Value != expected {
+		t.Fatalf("test case [%d], expect [%s], got [%s]", testCaseIndex, expected, str.Value)
 	}
 }
 

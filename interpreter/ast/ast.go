@@ -312,3 +312,48 @@ func (s *StringLiteral) String() string {
 }
 
 func (s *StringLiteral) expressionNode() {}
+
+type ArrayLiteral struct {
+	Token    token.Token
+	Elements []Expression
+}
+
+func (a *ArrayLiteral) TokenLiteral() string {
+	return a.Token.Literal
+}
+
+func (a *ArrayLiteral) String() string {
+	buffer := bytes.Buffer{}
+	buffer.WriteString("[")
+	elements := make([]string, 0)
+	for _, expr := range a.Elements {
+		elements = append(elements, expr.String())
+	}
+	buffer.WriteString(strings.Join(elements, ", "))
+	buffer.WriteString("]")
+	return buffer.String()
+}
+
+func (a *ArrayLiteral) expressionNode() {}
+
+type IndexExpression struct {
+	Token token.Token
+	Lhs   Expression
+	Index Expression
+}
+
+func (i *IndexExpression) TokenLiteral() string {
+	return i.Token.Literal
+}
+
+func (i *IndexExpression) String() string {
+	buffer := bytes.Buffer{}
+	buffer.WriteString("(")
+	buffer.WriteString(i.Lhs.String())
+	buffer.WriteString("[")
+	buffer.WriteString(i.Index.String())
+	buffer.WriteString("])")
+	return buffer.String()
+}
+
+func (i *IndexExpression) expressionNode() {}

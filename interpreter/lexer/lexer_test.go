@@ -38,6 +38,8 @@ return five == five;
 "foo bar";
 
 let y = "this is a sentence for testing! I want to say \"Hello World\"!";
+
+["1", 2];
 `
 
 	expectedTokens := []expectedToken{
@@ -171,6 +173,13 @@ let y = "this is a sentence for testing! I want to say \"Hello World\"!";
 		{token.IDENTIFIER, "y"},
 		{token.ASSIGN, "="},
 		{token.String, `this is a sentence for testing! I want to say "Hello World"!`},
+		{token.SEMICOLON, ";"},
+
+		{token.LBRACKET, "["},
+		{token.String, "1"},
+		{token.COMMA, ","},
+		{token.INT, "2"},
+		{token.RBRACKET, "]"},
 		{token.SEMICOLON, ";"},
 	}
 

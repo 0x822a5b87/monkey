@@ -239,14 +239,14 @@ func TestExpression_ComplexExpression(t *testing.T) {
 			"add(a + b + c * d / f + g)",
 			"add((((a + b) + ((c * d) / f)) + g))",
 		},
-		//{
-		//	"a * [1, 2, 3, 4][b * c] * d",
-		//	"((a * ([1, 2, 3, 4][(b * c)])) * d)",
-		//},
-		//{
-		//	"add(a * b[2], b[1], 2 * [1, 2][1])",
-		//	"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
-		//},
+		{
+			"a * [1, 2, 3, 4][b * c] * d",
+			"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+		},
+		{
+			"add(a * b[2], b[1], 2 * [1, 2][1])",
+			"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+		},
 	}
 
 	for i, complexExpr := range complexExpressions {
@@ -600,6 +600,59 @@ func TestStringLiteralExpression(t *testing.T) {
 
 	if literal.Literal != "hello world" {
 		t.Errorf("literal.Value not %q. got=%q", "hello world", literal.Literal)
+	}
+}
+
+func TestParsingArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+	program := parseProgram(input)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	array, ok := stmt.Expr.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("exp not ast.ArrayLiteral. got=%T", stmt.Expr)
+	}
+
+	if len(array.Elements) != 3 {
+		t.Fatalf("len(array.Elements) not 3. got=%d", len(array.Elements))
+	}
+
+	testIntegerLiteral(t, array.Elements[0], 1)
+	testInfixExpression(t, input, array.Elements[1], 2, "*", 2)
+	testInfixExpression(t, input, array.Elements[2], 3, "+", 3)
+}
+
+func TestEmptyArrayLiterals(t *testing.T) {
+	input := "[]"
+	program := parseProgram(input)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	array, ok := stmt.Expr.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("exp not ast.ArrayLiteral. got=%T", stmt.Expr)
+	}
+
+	if len(array.Elements) != 0 {
+		t.Fatalf("len(array.Elements) not 0. got=%d", len(array.Elements))
+	}
+}
+
+func TestParsingIndexExpressions(t *testing.T) {
+	input := `myArray[1 + 1]`
+	program := parseProgram(input)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	indexExp, ok := stmt.Expr.(*ast.IndexExpression)
+	if !ok {
+		t.Fatalf("exp not *ast.IndexExpression. got=%T", stmt.Expr)
+	}
+
+	if !testIdentifier(t, indexExp.Lhs, "myArray") {
+		return
+	}
+
+	if !testInfixExpression(t, input, indexExp.Index, 1, "+", 1) {
+		return
 	}
 }
 

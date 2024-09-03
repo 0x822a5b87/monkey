@@ -39,6 +39,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalCallExpression(node, env)
 	case *ast.StringLiteral:
 		return evalStringLiteral(node)
+	case *ast.ArrayLiteral:
+		return evalArrayLiteral(node, env)
+	case *ast.IndexExpression:
+		return evalIndexExpression(node, env)
 	default:
 		panic(fmt.Errorf("error node type for [%s]", reflect.TypeOf(node).String()))
 	}
@@ -78,11 +82,17 @@ func evalInfixExpression(infix *ast.InfixExpression, env *object.Environment) ob
 		return evalEqual(lhsObj, rhsObj)
 	case string(token.NotEq):
 		return evalNotEqual(lhsObj, rhsObj)
+	case string(token.LBRACKET):
+		return evalNotEqual(lhsObj, rhsObj)
 	}
 
 	// TODO support more infix expression
 	return object.NativeNull
 }
+
+//func evalIndex(array, index object.Object) object.Object {
+//
+//}
 
 func evalNotEqual(lhsObj, rhsObj object.Object) object.Object {
 	l := lhsObj.(object.Equatable)
@@ -217,6 +227,37 @@ func evalStringLiteral(stringLiteral *ast.StringLiteral) object.Object {
 	return &object.StringObj{
 		Value: stringLiteral.Literal,
 	}
+}
+
+func evalArrayLiteral(al *ast.ArrayLiteral, environment *object.Environment) object.Object {
+	array := &object.Array{Elements: make([]object.Object, 0)}
+	for _, element := range al.Elements {
+		obj := Eval(element, environment)
+		if obj.Type() == object.ObjError {
+			return obj
+		}
+		array.Elements = append(array.Elements, obj)
+	}
+	return array
+}
+
+func evalIndexExpression(ie *ast.IndexExpression, environment *object.Environment) object.Object {
+	lhs := Eval(ie.Lhs, environment)
+	if lhs.Type() == object.ObjError {
+		return lhs
+	}
+
+	index := Eval(ie.Index, environment)
+	if index.Type() == object.ObjError {
+		return index
+	}
+
+	array, ok := lhs.(object.Index)
+	if !ok {
+		return newError("%snot an index expression : %s", unknownOperatorErrStr, lhs.Type())
+	}
+
+	return array.Index(index)
 }
 
 func evalFnLiteral(fnLiteral *ast.FnLiteral, env *object.Environment) *object.Fn {
