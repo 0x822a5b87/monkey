@@ -113,6 +113,10 @@ len(monkeyArray);
 
 The basis for our implementation of the monkey array in our interpreter wil be a Go slice of type `[]object.Object`.
 
+### 4.5 - Hashes
+
+A hash is what's sometimes called `hash`, `map`, `hash map` or `dictionary` in programming languages.It maps key to values.
+
 
 
 

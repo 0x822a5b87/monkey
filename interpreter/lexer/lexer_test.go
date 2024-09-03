@@ -40,6 +40,8 @@ return five == five;
 let y = "this is a sentence for testing! I want to say \"Hello World\"!";
 
 ["1", 2];
+
+{"name": "0x822a5b87", "age": 30, true: "boolean", 99: "integer"};
 `
 
 	expectedTokens := []expectedToken{
@@ -180,6 +182,25 @@ let y = "this is a sentence for testing! I want to say \"Hello World\"!";
 		{token.COMMA, ","},
 		{token.INT, "2"},
 		{token.RBRACKET, "]"},
+		{token.SEMICOLON, ";"},
+
+		{token.LBRACE, "{"},
+		{token.String, "name"},
+		{token.COLON, ":"},
+		{token.String, "0x822a5b87"},
+		{token.COMMA, ","},
+		{token.String, "age"},
+		{token.COLON, ":"},
+		{token.INT, "30"},
+		{token.COMMA, ","},
+		{token.TRUE, "true"},
+		{token.COLON, ":"},
+		{token.String, "boolean"},
+		{token.COMMA, ","},
+		{token.INT, "99"},
+		{token.COLON, ":"},
+		{token.String, "integer"},
+		{token.RBRACE, "}"},
 		{token.SEMICOLON, ";"},
 	}
 

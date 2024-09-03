@@ -212,14 +212,14 @@ func TestErrorHandling(t *testing.T) {
 			"foobar",
 			"identifier not found: foobar",
 		},
-		//{
-		//	`{"name": "Monkey"}[fn(x) { x }];`,
-		//	"unusable as hash key: FUNCTION",
-		//},
-		//{
-		//	`999[1]`,
-		//	"index operator not supported: INTEGER",
-		//},
+		{
+			`{"name": "Monkey"}[fn(x) { x }];`,
+			"unusable as hash key: FUNCTION",
+		},
+		{
+			`999[1]`,
+			"unknown operator:not an index expression : INTEGER",
+		},
 	}
 
 	for _, tt := range tests {
@@ -511,6 +511,92 @@ func TestFirst(t *testing.T) {
 		case string:
 			testStringObj(t, i, evaluated, expected)
 		default:
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
+func TestHashLiterals(t *testing.T) {
+	input := `let two = "two";
+	{
+		"one": 10 - 9,
+		two: 1 + 1,
+		"thr" + "ee": 6 / 2,
+		4: 4,
+		true: 5,
+		false: 6
+	}`
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Hash)
+	if !ok {
+		t.Fatalf("Eval didn't return Hash. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	expected := map[object.HashKey]int64{
+		(&object.StringObj{Value: "one"}).HashKey():   1,
+		(&object.StringObj{Value: "two"}).HashKey():   2,
+		(&object.StringObj{Value: "three"}).HashKey(): 3,
+		(&object.Integer{Value: 4}).HashKey():         4,
+		object.NativeTrue.HashKey():                   5,
+		object.NativeFalse.HashKey():                  6,
+	}
+
+	if len(result.Pairs) != len(expected) {
+		t.Fatalf("Hash has wrong num of pairs. got=%d", len(result.Pairs))
+	}
+
+	for expectedKey, expectedValue := range expected {
+		pair, ok := result.Pairs[expectedKey]
+		if !ok {
+			t.Errorf("no pair for given key in Pairs")
+		}
+
+		testIntegerObject(t, 0, pair.Value, expectedValue)
+	}
+}
+
+func TestHashIndexExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{
+			`{"foo": 5}["foo"]`,
+			5,
+		},
+		{
+			`{"foo": 5}["bar"]`,
+			nil,
+		},
+		{
+			`let key = "foo"; {"foo": 5}[key]`,
+			5,
+		},
+		{
+			`{}["foo"]`,
+			nil,
+		},
+		{
+			`{5: 5}[5]`,
+			5,
+		},
+		{
+			`{true: 5}[true]`,
+			5,
+		},
+		{
+			`{false: 5}[false]`,
+			5,
+		},
+	}
+
+	for i, tt := range tests {
+		evaluated := testEval(tt.input)
+		integer, ok := tt.expected.(int)
+		if ok {
+			testIntegerObject(t, i, evaluated, int64(integer))
+		} else {
 			testNullObject(t, evaluated)
 		}
 	}

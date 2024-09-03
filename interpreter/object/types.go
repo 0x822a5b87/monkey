@@ -10,4 +10,5 @@ const (
 	ObjString   ObjType = "STRING"
 	ObjBuiltIn  ObjType = "BUILT_IN"
 	ObjArray    ObjType = "ARRAY"
+	ObjHash     ObjType = "HASH"
 )

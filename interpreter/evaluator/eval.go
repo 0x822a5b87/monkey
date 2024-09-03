@@ -43,6 +43,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalArrayLiteral(node, env)
 	case *ast.IndexExpression:
 		return evalIndexExpression(node, env)
+	case *ast.HashExpression:
+		return evalHash(node, env)
 	default:
 		panic(fmt.Errorf("error node type for [%s]", reflect.TypeOf(node).String()))
 	}
@@ -258,6 +260,30 @@ func evalIndexExpression(ie *ast.IndexExpression, environment *object.Environmen
 	}
 
 	return array.Index(index)
+}
+
+func evalHash(expr *ast.HashExpression, environment *object.Environment) object.Object {
+	hash := &object.Hash{Pairs: map[object.HashKey]*object.HashPair{}}
+	for k, v := range expr.Pairs {
+		key := Eval(k, environment)
+		if key.Type() == object.ObjError {
+			return key
+		}
+		value := Eval(v, environment)
+		if value.Type() == object.ObjError {
+			return value
+		}
+
+		hashable, ok := key.(object.Hashable)
+		if !ok {
+			return newError("%s type = [%s]", hashableNotImplementError, key.Type())
+		}
+		hash.Pairs[hashable.HashKey()] = &object.HashPair{
+			Key:   key,
+			Value: value,
+		}
+	}
+	return hash
 }
 
 func evalFnLiteral(fnLiteral *ast.FnLiteral, env *object.Environment) *object.Fn {

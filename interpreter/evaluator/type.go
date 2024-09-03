@@ -13,6 +13,7 @@ const (
 	unknownOperatorErrStr      = "unknown operator:"
 	identifierNotFoundErrStr   = "identifier not found:"
 	paramsNumberMismatchErrStr = "number of parameters mismatch:"
+	hashableNotImplementError  = "hashable not implement:"
 )
 
 var infixOperatorTypes map[string]any

@@ -61,6 +61,7 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.precedences[token.FALSE] = LowestPrecedence
 	p.precedences[token.LPAREN] = CallPrecedence
 	p.precedences[token.RPAREN] = LowestPrecedence
+	p.precedences[token.COLON] = LowestPrecedence
 
 	p.precedences[token.LBRACE] = CallPrecedence
 	p.precedences[token.RBRACE] = LowestPrecedence
@@ -78,6 +79,7 @@ func NewParser(l lexer.Lexer) *Parser {
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroup)
 	p.registerPrefix(token.LBRACKET, p.parseArray)
+	p.registerPrefix(token.LBRACE, p.parseMap)
 	p.registerPrefix(token.IF, p.parseIfStmt)
 	p.registerPrefix(token.FUNCTION, p.parseFn)
 	p.registerPrefix(token.String, p.parseStringLiteral)
@@ -337,6 +339,45 @@ func (p *Parser) parseArray() ast.Expression {
 	arrayLiteral.Elements = p.parseExpressionList(token.RBRACKET)
 	p.expectPeek(token.RBRACKET)
 	return arrayLiteral
+}
+
+//func (p *Parser) parseMap() ast.Expression {
+//	m := &ast.HashExpression{
+//		Token: p.currToken,
+//		Pairs:   make(map[ast.Expression]ast.Expression),
+//	}
+//
+//	p.expect(token.LBRACE)
+//	for !p.currTokenIs(token.RBRACE) {
+//		k := p.parseExpression(LowestPrecedence)
+//		p.expect(token.COLON)
+//		v := p.parseExpression(LowestPrecedence)
+//		m.Pairs[k] = v
+//	}
+//
+//	return m
+//}
+
+func (p *Parser) parseMap() ast.Expression {
+	m := &ast.HashExpression{
+		Token: p.currToken,
+		Pairs: make(map[ast.Expression]ast.Expression),
+	}
+
+	for !p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+		k := p.parseExpression(LowestPrecedence)
+		p.expectPeek(token.COLON)
+		p.nextToken()
+		v := p.parseExpression(LowestPrecedence)
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+		}
+		m.Pairs[k] = v
+	}
+	p.expectPeek(token.RBRACE)
+
+	return m
 }
 
 func (p *Parser) parseIndex(lhs ast.Expression) ast.Expression {

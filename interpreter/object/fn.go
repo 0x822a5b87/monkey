@@ -44,8 +44,6 @@ type Negative interface {
 type Index interface {
 	Object
 	Index(Object) Object
-	First() Object
-	Last() Object
 }
 
 type Len interface {
@@ -61,4 +59,10 @@ type Rest interface {
 type Push interface {
 	Object
 	Push(obj Object) Object
+}
+
+type List interface {
+	Object
+	First() Object
+	Last() Object
 }

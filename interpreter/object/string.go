@@ -1,8 +1,12 @@
 package object
 
+import (
+	"crypto/md5"
+	"encoding/binary"
+)
+
 type StringObj struct {
 	Value string
-	Env   *Environment
 }
 
 func (s *StringObj) Type() ObjType {
@@ -11,6 +15,17 @@ func (s *StringObj) Type() ObjType {
 
 func (s *StringObj) Inspect() string {
 	return s.Value
+}
+
+func (s *StringObj) HashKey() HashKey {
+	hasher := md5.New()
+	hasher.Write([]byte(s.Value))
+	hashValue := int64(binary.BigEndian.Uint64(hasher.Sum(nil)))
+
+	return HashKey{
+		Type:      ObjString,
+		HashValue: hashValue,
+	}
 }
 
 func (s *StringObj) Add(object Object) Object {

@@ -68,7 +68,7 @@ func init() {
 		}
 
 		obj := objs[0]
-		builtInFirst, ok := obj.(Index)
+		builtInFirst, ok := obj.(List)
 		if !ok {
 			return newWrongArgumentTypeError(builtInFnNameFirst, obj.Type())
 		}
@@ -81,7 +81,7 @@ func init() {
 		}
 
 		obj := objs[0]
-		buildInLast, ok := obj.(Index)
+		buildInLast, ok := obj.(List)
 		if !ok {
 			return newWrongArgumentTypeError(builtInFnNameLast, obj.Type())
 		}

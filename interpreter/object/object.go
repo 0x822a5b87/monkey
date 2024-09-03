@@ -26,6 +26,20 @@ type Object interface {
 	Inspect() string
 }
 
+type HashKey struct {
+	Type      ObjType
+	HashValue int64
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hashable interface {
+	HashKey() HashKey
+}
+
 type Integer struct {
 	Value int64
 }
@@ -36,6 +50,13 @@ func (i *Integer) Type() ObjType {
 
 func (i *Integer) Inspect() string {
 	return strconv.FormatInt(i.Value, 10)
+}
+
+func (i *Integer) HashKey() HashKey {
+	return HashKey{
+		Type:      ObjInteger,
+		HashValue: i.Value,
+	}
 }
 
 func (i *Integer) Add(o Object) Object {
@@ -127,6 +148,16 @@ func (b *Boolean) Type() ObjType {
 
 func (b *Boolean) Inspect() string {
 	return fmt.Sprintf("%t", b.Value)
+}
+
+func (b *Boolean) HashKey() HashKey {
+	var hashValue int64
+	if b.Value {
+		hashValue = 1
+	} else {
+		hashValue = 0
+	}
+	return HashKey{Type: ObjBoolean, HashValue: hashValue}
 }
 
 func (b *Boolean) Equal(o Object) *Boolean {
