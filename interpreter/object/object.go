@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 var (
@@ -206,73 +205,4 @@ func (f *Fn) Inspect() string {
 	buffer.WriteString(f.Body.String())
 	buffer.WriteString("\n}")
 	return buffer.String()
-}
-
-type StringObj struct {
-	Value string
-	Env   *Environment
-}
-
-func (s *StringObj) Type() ObjType {
-	return ObjString
-}
-
-func (s *StringObj) Inspect() string {
-	return s.Value
-}
-
-func (s *StringObj) Add(object Object) Object {
-	s.Value = s.Value + object.Inspect()
-	return s
-}
-
-func (s *StringObj) Index(o Object) Object {
-	other, ok := o.(*Integer)
-	if !ok {
-		return NativeNull
-	}
-	if other.Value >= int64(len(s.Value)) || other.Value < 0 {
-		return NativeNull
-	}
-	ch := s.Value[other.Value]
-	return &StringObj{Value: string(rune(ch))}
-}
-
-func (s *StringObj) Len() Integer {
-	return Integer{Value: int64(len(s.Value))}
-}
-
-type Array struct {
-	Elements []Object
-}
-
-func (a *Array) Type() ObjType {
-	return ObjArray
-}
-
-func (a *Array) Inspect() string {
-	buffer := bytes.Buffer{}
-	elements := make([]string, 0)
-	for _, element := range a.Elements {
-		elements = append(elements, element.Inspect())
-	}
-	buffer.WriteString("[")
-	buffer.WriteString(strings.Join(elements, ", "))
-	buffer.WriteString("]")
-	return buffer.String()
-}
-
-func (a *Array) Index(o Object) Object {
-	other, ok := o.(*Integer)
-	if !ok {
-		return NativeNull
-	}
-	if other.Value >= int64(len(a.Elements)) || other.Value < 0 {
-		return NativeNull
-	}
-	return a.Elements[other.Value]
-}
-
-func (a *Array) Len() Integer {
-	return Integer{Value: int64(len(a.Elements))}
 }

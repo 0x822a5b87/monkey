@@ -6,8 +6,10 @@ import (
 	"0x822a5b87/monkey/object"
 	"0x822a5b87/monkey/parser"
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"strings"
 )
 
 const PROMPT = ">> "
@@ -19,13 +21,12 @@ func Start(in io.Reader, out io.Writer) {
 	for {
 		fmt.Print(PROMPT)
 
-		scan := scanner.Scan()
-		if !scan {
+		sourceCode := readSourceCode(scanner)
+		if len(sourceCode) == 0 {
 			return
 		}
 
-		line := scanner.Text()
-		l := lexer.NewLexer(line)
+		l := lexer.NewLexer(sourceCode)
 
 		p := parser.NewParser(*l)
 		program := p.ParseProgram()
@@ -38,4 +39,23 @@ func Start(in io.Reader, out io.Writer) {
 			}
 		}
 	}
+}
+
+func readSourceCode(scanner *bufio.Scanner) string {
+	buffer := bytes.Buffer{}
+	for {
+		scan := scanner.Scan()
+		if !scan {
+			return ""
+		}
+		line := scanner.Text()
+		if strings.HasSuffix(line, "\\") {
+			buffer.WriteString(line[:len(line)-1])
+			buffer.WriteString("\n")
+			continue
+		}
+		buffer.WriteString(line)
+		break
+	}
+	return buffer.String()
 }
