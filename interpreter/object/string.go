@@ -29,8 +29,7 @@ func (s *StringObj) HashKey() HashKey {
 }
 
 func (s *StringObj) Add(object Object) Object {
-	s.Value = s.Value + object.Inspect()
-	return s
+	return &StringObj{Value: s.Value + object.Inspect()}
 }
 
 func (s *StringObj) Index(o Object) Object {

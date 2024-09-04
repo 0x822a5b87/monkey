@@ -210,14 +210,10 @@ func evalLetStatement(letStatement *ast.LetStatement, env *object.Environment) o
 }
 
 func evalCallExpression(call *ast.CallExpression, env *object.Environment) object.Object {
-	fnOrBuiltIn, err := getFnOrBuiltIn(call, env)
-	if err != nil {
-		return err
-	}
-
+	fnOrBuiltIn := Eval(call.Fn, env)
 	switch fnValue := fnOrBuiltIn.(type) {
 	case *object.Fn:
-		return evalFn(call, fnValue)
+		return evalFn(call, fnValue, env)
 	case *object.BuiltIn:
 		return evalBuiltIn(call, fnValue, env)
 	default:
@@ -383,45 +379,67 @@ func evalBuiltIn(call *ast.CallExpression, builtIn *object.BuiltIn, env *object.
 	return builtIn.BuiltInFn(args...)
 }
 
-func evalFn(call *ast.CallExpression, fn *object.Fn) object.Object {
+//func evalArguments(call *ast.CallExpression, env *object.Environment) object.Object {
+//
+//}
+
+func evalFn(call *ast.CallExpression, fn *object.Fn, callEnv *object.Environment) object.Object {
 	if len(call.Arguments) != len(fn.Params) {
 		return newError("%s expected [%d], got [%d]", paramsNumberMismatchErrStr, len(call.Arguments), len(fn.Params))
 	}
 
-	// this is important because a function has its own execution environment, rather than the environment
-	// where the function is called.
-	subEnv := object.NewEnvironment(fn.Env)
+	// there are two distinct environments associated with a function
+	// 1. call environment : the environment when the function is called;
+	// 2. function define environment : the environment when the function is defined.
+	// when a function is called, there should have an environment chain:
+	// inside function env -> args -> call env -> ...
+	// and a function call contains its own environment and this environment is initiated when a FnLiteral is evaluated which is the fn.Env
+	// the fn.Env contains environment: call env -> ...
+	// so what we should do is initiate the args, and use fn.Env as its parent env.
 
 	// env for arguments
-	arguments := object.NewEnvironment(subEnv)
+	argumentsEnv := object.NewEnvironment(fn.Env)
 	for i, arg := range call.Arguments {
 		// TODO add scope for block
-		value := Eval(arg, arguments)
+		value := Eval(arg, callEnv)
+		if value.Type() == object.ObjError {
+			return value
+		}
 		// bind argument value to params
-		arguments.Set(fn.Params[i].String(), value)
+		argumentsEnv.Set(fn.Params[i].String(), value)
 	}
-
-	return Eval(fn.Body, arguments)
+	fnEvalResult := Eval(fn.Body, argumentsEnv)
+	return unwrapReturnValue(fnEvalResult)
 }
 
-func getFnOrBuiltIn(call *ast.CallExpression, env *object.Environment) (object.Object, *object.Error) {
-	fnName, ok := call.Fn.(*ast.Identifier)
-	if ok {
-		fn := Eval(fnName, env)
-		switch function := fn.(type) {
-		case *object.BuiltIn:
-			return function, nil
-		case *object.Fn:
-			return function, nil
-		}
-		return nil, newError("%s from %s to %s", typeMismatchErrStr, fn.Type(), object.ObjFunction)
-	}
-	// maybe a closure
-	fnLiteral, ok := call.Fn.(*ast.FnLiteral)
-	if ok {
-		fn := Eval(fnLiteral, env)
-		return fn, nil
-	}
+//func getFnOrBuiltIn(call *ast.CallExpression, env *object.Environment) (object.Object, *object.Error) {
+//	fnName, ok := call.Fn.(*ast.Identifier)
+//	if ok {
+//		fn := Eval(fnName, env)
+//		switch function := fn.(type) {
+//		case *object.BuiltIn:
+//			return function, nil
+//		case *object.Fn:
+//			return function, nil
+//		case *object.Error:
+//			return nil, function
+//		}
+//		return nil, newError("%s from %s to %s", typeMismatchErrStr, fn.Type(), object.ObjFunction)
+//	}
+//	// maybe a closure
+//	fnLiteral, ok := call.Fn.(*ast.FnLiteral)
+//	if ok {
+//		fn := Eval(fnLiteral, env)
+//		return fn, nil
+//	}
+//
+//	panic("unknown call expression")
+//}
 
-	panic("unknown call expression")
+func unwrapReturnValue(obj object.Object) object.Object {
+	returnObj, ok := obj.(*object.Return)
+	if ok {
+		return returnObj.Object
+	}
+	return obj
 }

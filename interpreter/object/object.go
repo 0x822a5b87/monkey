@@ -61,32 +61,28 @@ func (i *Integer) HashKey() HashKey {
 
 func (i *Integer) Add(o Object) Object {
 	if other, ok := o.(*Integer); ok {
-		i.Value = i.Value + other.Value
-		return i
+		return &Integer{Value: i.Value + other.Value}
 	}
 	return NativeNull
 }
 
 func (i *Integer) Sub(o Object) Object {
 	if other, ok := o.(*Integer); ok {
-		i.Value = i.Value - other.Value
-		return i
+		return &Integer{Value: i.Value - other.Value}
 	}
 	return NativeNull
 }
 
 func (i *Integer) Mul(o Object) Object {
 	if other, ok := o.(*Integer); ok {
-		i.Value = i.Value * other.Value
-		return i
+		return &Integer{Value: i.Value * other.Value}
 	}
 	return NativeNull
 }
 
 func (i *Integer) Divide(o Object) Object {
 	if other, ok := o.(*Integer); ok {
-		i.Value = i.Value / other.Value
-		return i
+		return &Integer{Value: i.Value / other.Value}
 	}
 	return NativeNull
 }

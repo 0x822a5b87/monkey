@@ -602,6 +602,24 @@ func TestHashIndexExpressions(t *testing.T) {
 	}
 }
 
+func TestFibonacci(t *testing.T) {
+	input := `
+let fibonacci = fn(x) {
+  if (x == 0) {
+    return 0;
+  };
+  if (x == 1) {
+    return 1;
+  };
+  return fibonacci(x - 1) + fibonacci(x - 2);
+};
+
+fibonacci(10);
+`
+	obj := testEval(input)
+	testIntegerObject(t, 0, obj, 55)
+}
+
 func testEval(input string) object.Object {
 	newLexer := lexer.NewLexer(input)
 	newParser := parser.NewParser(*newLexer)

@@ -34,14 +34,14 @@ let name = "Monkey";
 let result = 10 * (20 / 2);
 
 // array
-let myArray = [1, 2, 3, 4, ,5];
+let myArray = [1, 2, 3, 4, 5];
 
 // hash
 let thorsten = {"name": "Thorsten", "age": 28};
 
 // accessing the elements in arrays and hashes is done with index expression
-let intValue = myArray[0]
-let name = thorsten["name"]
+let intValue = myArray[0];
+let name = thorsten["name"];
 
 // the let statements can also be used to bind functions to names
 let add = fn(a, b) {
@@ -49,31 +49,31 @@ let add = fn(a, b) {
 };
 
 // implicit return values are also possible
-let add2 = fn(a, b) {
-  a + b;
+let add_ = fn(a, b) {
+  a + b
 };
 
 // a more complex function
 let fibonacci = fn(x) {
   if (x == 0) {
-    return 0
-  }
-
+    return 0;
+  };
   if (x == 1) {
-    return 1
-  }
-
+    return 1;
+  };
   return fibonacci(x - 1) + fibonacci(x - 2);
 };
+
+fibonacci(10);
 
 // a special type of functions, called higher order functions
 let twice = fn(f, x) {
   return f(f(x));
-}
+};
 
 let addTwo = fn(x) {
   return x + 2;
-}
+};
 
 twice(addTwo, 2);
 ```
