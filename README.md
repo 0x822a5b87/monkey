@@ -123,19 +123,11 @@ mindmap
     		prefix operator
     		infix operator
     		sufix operator
+    evaluater
+    	Eval
+    	Environment
+    Object
+    	Integer
+    	Boolean
 ```
 
-### Parsing Expression
-
-```mermaid
----
-title: Pratt Parsing
----
-mindmap
-	Parsing Expression
-		Identifier
-		IntegerLiteral
-		Prefix Operators
-```
-
-## 
