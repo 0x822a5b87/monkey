@@ -7,7 +7,7 @@
 ## install
 
 ```bash
-go work init interpreter/
+go work init interpreter compiler
 
 go work sync
 ```

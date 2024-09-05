@@ -1,8 +1,8 @@
 package evaluator
 
 import (
-	"0x822a5b87/monkey/object"
-	"0x822a5b87/monkey/token"
+	"0x822a5b87/monkey/interpreter/object"
+	"0x822a5b87/monkey/interpreter/token"
 	"bytes"
 	"fmt"
 	"reflect"

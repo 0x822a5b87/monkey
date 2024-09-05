@@ -1,10 +1,10 @@
 package evaluator
 
 import (
-	"0x822a5b87/monkey/ast"
-	"0x822a5b87/monkey/common"
-	"0x822a5b87/monkey/object"
-	"0x822a5b87/monkey/token"
+	"0x822a5b87/monkey/interpreter/ast"
+	"0x822a5b87/monkey/interpreter/common"
+	"0x822a5b87/monkey/interpreter/object"
+	"0x822a5b87/monkey/interpreter/token"
 	"fmt"
 	"reflect"
 )

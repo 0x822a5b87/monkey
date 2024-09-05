@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"0x822a5b87/monkey/ast"
-	"0x822a5b87/monkey/lexer"
-	"0x822a5b87/monkey/token"
+	"0x822a5b87/monkey/interpreter/ast"
+	"0x822a5b87/monkey/interpreter/lexer"
+	"0x822a5b87/monkey/interpreter/token"
 	"fmt"
 	"reflect"
 	"testing"

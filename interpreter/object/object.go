@@ -1,8 +1,8 @@
 package object
 
 import (
-	"0x822a5b87/monkey/ast"
-	"0x822a5b87/monkey/util"
+	"0x822a5b87/monkey/interpreter/ast"
+	"0x822a5b87/monkey/interpreter/util"
 	"bytes"
 	"fmt"
 	"strconv"

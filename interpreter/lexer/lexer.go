@@ -1,8 +1,8 @@
 package lexer
 
 import (
-	"0x822a5b87/monkey/common"
-	"0x822a5b87/monkey/token"
+	"0x822a5b87/monkey/interpreter/common"
+	"0x822a5b87/monkey/interpreter/token"
 	"bytes"
 )
 
