@@ -88,6 +88,118 @@ the interpreter will have a few major parts:
 - the internal object system
 - the evaluator
 
+## structure
+
+### Node
+
+```mermaid
+---
+title: monkey AST
+---
+classDiagram
+class Node
+<<interface>> Node
+class Expression
+<<interface>> Expression
+class Statement
+<<interface>> Statement
+Node <|-- Expression
+Node <|-- Statement
+Node <|-- Program
+```
+
+### Statement
+
+```mermaid
+---
+title: monkey AST
+---
+classDiagram
+class Statement
+<<interface>> Statement
+
+Statement <|-- BlockStatement
+Statement <|-- ExpressionStatement
+Statement <|-- LetStatement
+Statement <|-- ReturnStatement
+```
+
+### Expression
+
+```mermaid
+---
+title: monkey AST
+---
+classDiagram
+class Expression
+<<interface>> Expression
+
+Node <|-- Expression
+
+Expression <|--Array
+Expression <|--Boolean
+Expression <|--Call
+Expression <|--FnLiteral
+Expression <|--Hash
+Expression <|--Identifier
+Expression <|--IndexE
+Expression <|--If
+Expression <|--Infix
+Expression <|--IntegerLiteral
+Expression <|--Prefix
+Expression <|--StringLiteral
+```
+
+## Recursive descent
+
+According to structure, the `recursive descent` should be like the following code :
+
+```go
+func (c *Compiler) Compile(root ast.Node) error {
+	switch node := root.(type) {
+	case *ast.Program:
+		return c.compileProgram(node)
+	case ast.Expression:
+		return c.compileExpression(node)
+	// TODO support more ast
+	case ast.Statement:
+		return c.compileStatement(node)
+	}
+	return nil
+}
+
+func (c *Compiler) compileProgram(program *ast.Program) error {
+	for _, stmt := range program.Statements {
+		err := c.Compile(stmt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Compiler) compileExpression(expr ast.Expression) error {
+	switch expr := expr.(type) {
+	case *ast.IntegerLiteral:
+		return c.compileIntegerLiteral(expr)
+		// TODO support more expression type
+	case *ast.InfixExpression:
+		return c.compileInfixOperator(expr)
+	}
+	return common.NewErrUnsupportedCompilingNode(expr.String())
+}
+
+func (c *Compiler) compileStatement(statement ast.Statement) error {
+	switch stmt := statement.(type) {
+	case *ast.ExpressionStatement:
+		return c.compileExpressionStatement(stmt)
+		// TODO support more statement type
+	}
+
+	return common.NewErrUnsupportedCompilingNode(statement.String())
+}
+```
+
 ## interpreter
 
 ```mermaid
