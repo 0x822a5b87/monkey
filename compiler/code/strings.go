@@ -16,6 +16,10 @@ func joinInt(separator string, numbers []int) string {
 
 func formatInstruction(offsetBytes int, name string, operands []int) string {
 	offset := fmt.Sprintf("%04d", offsetBytes)
-	operandsStr := joinInt(" ", operands)
-	return fmt.Sprintf("%s %s %s", offset, name, operandsStr)
+	if len(operands) > 0 {
+		operandsStr := joinInt(" ", operands)
+		return fmt.Sprintf("%s %s %s", offset, name, operandsStr)
+	} else {
+		return fmt.Sprintf("%s %s", offset, name)
+	}
 }
