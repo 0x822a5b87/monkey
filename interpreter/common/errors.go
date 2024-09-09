@@ -24,3 +24,7 @@ func (e ErrorInfo) Error() string {
 func (e ErrorCode) Sting() string {
 	return fmt.Sprintf("%d", e)
 }
+
+func NewErrUnsupportedCompilingNode(nodeName string) error {
+	return errUnsupportedCompilingNode.format(nodeName)
+}
