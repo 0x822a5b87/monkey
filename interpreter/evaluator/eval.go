@@ -62,7 +62,7 @@ func evalInfixExpression(infix *ast.InfixExpression, env *object.Environment) ob
 	lhsObj := Eval(infix.Lhs, env)
 	rhsObj := Eval(infix.Rhs, env)
 
-	err := infixExpressionTypeCheck(infix.Operator, lhsObj, rhsObj)
+	err := InfixExpressionTypeCheck(infix.Operator, lhsObj, rhsObj)
 	if err != nil {
 		return err
 	}

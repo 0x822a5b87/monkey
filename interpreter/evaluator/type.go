@@ -19,7 +19,7 @@ const (
 var infixOperatorTypes map[string]any
 var prefixOperatorTypes map[string]any
 
-func infixExpressionTypeCheck(operator string, lhs, rhs object.Object) *object.Error {
+func InfixExpressionTypeCheck(operator string, lhs, rhs object.Object) *object.Error {
 
 	if lhs.Type() == object.ObjError {
 		return lhs.(*object.Error)
@@ -29,7 +29,10 @@ func infixExpressionTypeCheck(operator string, lhs, rhs object.Object) *object.E
 		return rhs.(*object.Error)
 	}
 
-	interfaceValue := infixOperatorTypes[operator]
+	interfaceValue, ok := infixOperatorTypes[operator]
+	if !ok {
+		return &object.Error{Message: fmt.Sprintf("unknown operator %s", operator)}
+	}
 
 	typeMismatchErr := checkForTypeMismatchOperator(operator, lhs, rhs)
 	if typeMismatchErr != nil {

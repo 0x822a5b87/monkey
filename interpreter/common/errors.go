@@ -29,6 +29,10 @@ func NewErrUnsupportedCompilingNode(nodeName string) error {
 	return errUnsupportedCompilingNode.format(nodeName)
 }
 
+func NewErrUnsupportedBinaryExpr(nodeName string) error {
+	return errUnsupportedBinaryOperator.format(nodeName)
+}
+
 func NewErrEmptyStack(nodeName string) error {
 	return errEmptyStack.format(nodeName)
 }

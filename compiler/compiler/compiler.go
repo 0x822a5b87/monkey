@@ -5,6 +5,7 @@ import (
 	"0x822a5b87/monkey/interpreter/ast"
 	"0x822a5b87/monkey/interpreter/common"
 	"0x822a5b87/monkey/interpreter/object"
+	"0x822a5b87/monkey/interpreter/token"
 )
 
 type instructionIndex int
@@ -115,8 +116,17 @@ func (c *Compiler) compileInfixOperator(infixExpr *ast.InfixExpression) error {
 
 func (c *Compiler) compileOperator(operator string) error {
 	switch operator {
-	case "+":
+	case string(token.PLUS):
 		c.emit(code.OpAdd)
+		return nil
+	case string(token.SUB):
+		c.emit(code.OpSub)
+		return nil
+	case string(token.ASTERISK):
+		c.emit(code.OpMul)
+		return nil
+	case string(token.SLASH):
+		c.emit(code.OpDiv)
 		return nil
 		// TODO support more operator
 	}

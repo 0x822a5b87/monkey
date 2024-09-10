@@ -23,6 +23,36 @@ func TestMinimalCompiler(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+		{
+			input:             `65535 - 65534`,
+			expectedConstants: []interface{}{65535, 65534},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSub),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             `256 * 0`,
+			expectedConstants: []interface{}{256, 0},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpMul),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             `512 / 256`,
+			expectedConstants: []interface{}{512, 256},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpDiv),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 
 	for i, testCase := range testCases {

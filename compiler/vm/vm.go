@@ -4,6 +4,7 @@ import (
 	"0x822a5b87/monkey/compiler/code"
 	"0x822a5b87/monkey/compiler/compiler"
 	"0x822a5b87/monkey/interpreter/common"
+	"0x822a5b87/monkey/interpreter/evaluator"
 	"0x822a5b87/monkey/interpreter/object"
 	"errors"
 	"fmt"
@@ -50,9 +51,15 @@ func (v *Vm) Run() error {
 		case code.OpConstant:
 			err = v.opConstant()
 		case code.OpAdd:
-			err = v.opAdd()
+			err = v.executeBinaryOperation(op)
 		case code.OpPop:
 			err = v.opPop()
+		case code.OpSub:
+			err = v.executeBinaryOperation(op)
+		case code.OpMul:
+			err = v.executeBinaryOperation(op)
+		case code.OpDiv:
+			err = v.executeBinaryOperation(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -123,24 +130,55 @@ func (v *Vm) opConstant() error {
 }
 
 // opAdd add two number from the stack and push the result back onto the stack
-func (v *Vm) opAdd() error {
-	lhs := v.pop()
-	rhs := v.pop()
-	if lhs == nil || rhs == nil {
-		return common.NewErrEmptyStack("OpAdd")
-	}
-
-	left, ok := lhs.(object.Add)
-	if !ok {
-		return common.NewErrTypeMismatch("integer", string(left.Type()))
-	}
-
-	right, ok := rhs.(object.Add)
-	if !ok {
-		return common.NewErrTypeMismatch("integer", string(right.Type()))
-	}
-
+func (v *Vm) opAdd(lhs, rhs object.Object) error {
+	left := lhs.(object.Add)
+	right := rhs.(object.Add)
 	return v.push(left.Add(right))
+}
+
+func (v *Vm) opSub(lhs, rhs object.Object) error {
+	left := lhs.(object.Subtract)
+	right := rhs.(object.Subtract)
+	return v.push(left.Sub(right))
+}
+
+func (v *Vm) opMul(lhs, rhs object.Object) error {
+	left := lhs.(object.Multiply)
+	right := rhs.(object.Multiply)
+	return v.push(left.Mul(right))
+}
+
+func (v *Vm) opDiv(lhs, rhs object.Object) error {
+	left := lhs.(object.Divide)
+	right := rhs.(object.Divide)
+	return v.push(left.Divide(right))
+}
+
+func (v *Vm) executeBinaryOperation(op code.Opcode) error {
+	rhs := v.pop()
+	lhs := v.pop()
+	definition, _ := code.Lookup(op)
+	if lhs == nil || rhs == nil {
+		return common.NewErrEmptyStack(definition.Name)
+	}
+
+	err := evaluator.InfixExpressionTypeCheck(definition.Operator, lhs, rhs)
+	if err != nil {
+		return errors.New(err.Message)
+	}
+
+	switch op {
+	case code.OpAdd:
+		return v.opAdd(lhs, rhs)
+	case code.OpSub:
+		return v.opSub(lhs, rhs)
+	case code.OpMul:
+		return v.opMul(lhs, rhs)
+	case code.OpDiv:
+		return v.opDiv(lhs, rhs)
+	default:
+		return common.NewErrUnsupportedBinaryExpr(definition.Name)
+	}
 }
 
 func (v *Vm) opPop() error {
