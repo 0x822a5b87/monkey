@@ -62,7 +62,7 @@ func compile(out io.Writer, stmt ast.Statement) {
 		return
 	}
 
-	stackTop := v.StackTop()
+	stackTop := v.TestOnlyLastPoppedStackElement()
 
 	silentWrite(out, stackTop.Inspect())
 	silentWrite(out, "\n")

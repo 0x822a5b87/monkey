@@ -10,12 +10,23 @@ const (
 	// it on to the stack.
 	OpConstant Opcode = iota
 	OpAdd
+	OpPop
 )
 
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
 	// tells the VM to pop the two topmost elements off the stack, add them and push the result back on the stack
 	OpAdd: {"OpAdd", []int{}},
+	// OpPop doesn't need to use any operands. It's only job is to tell the VM to pop
+	// the topmost element off the stack and for that it doesn't need an operand.
+	// For further information, let's have a quick refresher, there are three types of statement in monkey:
+	// 1. let statement
+	// 2. return statement
+	// 3. expression statement
+	// Whereas the first two explicitly reuse the value their child-expression nodes produce,
+	// but expression statement merely wrap expressions so the can occur on their own. The value they produce is not
+	// reuse, by definition. So, we need to emit a OpPop for every expression statement to clear it up.
+	OpPop: {"OpPop", []int{}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

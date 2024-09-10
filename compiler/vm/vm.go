@@ -51,8 +51,10 @@ func (v *Vm) Run() error {
 			err = v.opConstant()
 		case code.OpAdd:
 			err = v.opAdd()
+		case code.OpPop:
+			err = v.opPop()
 		default:
-			return fmt.Errorf("wrong type of Opcode : [%d]", op)
+			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
 
 		if err != nil {
@@ -68,6 +70,12 @@ func (v *Vm) StackTop() object.Object {
 	}
 
 	return v.stack[v.sp-1]
+}
+
+// TestOnlyLastPoppedStackElement this method is for test only
+// Sometimes, we want to assert that "this should have been on the stack, right before you popped it off"
+func (v *Vm) TestOnlyLastPoppedStackElement() object.Object {
+	return v.stack[v.sp]
 }
 
 func (v *Vm) push(o object.Object) error {
@@ -114,6 +122,7 @@ func (v *Vm) opConstant() error {
 	return v.push(v.constants.GetConstant(constantIndex))
 }
 
+// opAdd add two number from the stack and push the result back onto the stack
 func (v *Vm) opAdd() error {
 	lhs := v.pop()
 	rhs := v.pop()
@@ -132,4 +141,9 @@ func (v *Vm) opAdd() error {
 	}
 
 	return v.push(left.Add(right))
+}
+
+func (v *Vm) opPop() error {
+	v.pop()
+	return nil
 }

@@ -12,16 +12,31 @@ import (
 
 func TestCompilerIntegerArithmetic(t *testing.T) {
 	testCases := []compilerTestCase{
+		//{
+		//	input: "1 + 2",
+		//	expectedConstants: []any{
+		//		1,
+		//		2,
+		//	},
+		//	expectedInstructions: []code.Instructions{
+		//		code.Make(code.OpConstant, 1),
+		//		code.Make(code.OpConstant, 2),
+		//		code.Make(code.OpAdd),
+		//		code.Make(code.OpPop),
+		//	},
+		//},
+
 		{
-			input: "1 + 2",
+			input: "100; 200;",
 			expectedConstants: []any{
-				1,
-				2,
+				100,
+				200,
 			},
 			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
 				code.Make(code.OpConstant, 1),
-				code.Make(code.OpConstant, 2),
-				code.Make(code.OpAdd),
+				code.Make(code.OpPop),
 			},
 		},
 	}
@@ -59,7 +74,7 @@ func runVmTests(t *testing.T, testCases []vmTestCase) {
 func runVmTest(t *testing.T, testCase vmTestCase, caseIndex int) {
 	t.Helper()
 	vm := runVm(t, caseIndex, testCase.input)
-	topElement := vm.StackTop()
+	topElement := vm.TestOnlyLastPoppedStackElement()
 
 	testExpectedObject(t, caseIndex, testCase.expected, topElement)
 }

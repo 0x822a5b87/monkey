@@ -73,7 +73,14 @@ func (c *Compiler) compileStatement(statement ast.Statement) error {
 }
 
 func (c *Compiler) compileExpressionStatement(statement *ast.ExpressionStatement) error {
-	return c.Compile(statement.Expr)
+	err := c.Compile(statement.Expr)
+	if err != nil {
+		return err
+	}
+	// expression will produce an object on stack which can produce a stack overflow.
+	// we assert that the compiled expression statement should be followed by an OpPop instruction.
+	c.emit(code.OpPop)
+	return nil
 }
 
 func (c *Compiler) compileExpression(expr ast.Expression) error {
@@ -118,10 +125,6 @@ func (c *Compiler) compileOperator(operator string) error {
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) instructionIndex {
 	instruction := code.Make(op, operands...)
-	return c.addInstruction(instruction)
-}
-
-func (c *Compiler) addInstruction(instruction code.Instructions) instructionIndex {
 	var index = instructionIndex(len(c.instructions))
 	c.instructions = append(c.instructions, instruction...)
 	return index
