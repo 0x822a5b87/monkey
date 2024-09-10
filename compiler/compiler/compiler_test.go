@@ -65,6 +65,35 @@ func TestMinimalCompiler(t *testing.T) {
 	}
 }
 
+func TestBooleanExpressions(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input:             "true",
+			expectedConstants: []any{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "false",
+			expectedConstants: []any{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpFalse),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+	for i, testCase := range testCases {
+		testCaseInfo := &util.TestCaseInfo{
+			T:             t,
+			TestFnName:    "TestBooleanExpressions",
+			TestCaseIndex: i,
+		}
+		runCompilerTest(testCaseInfo, &testCase)
+	}
+}
+
 func runCompilerTest(testCaseInfo *util.TestCaseInfo, testCase *compilerTestCase) {
 	testCaseInfo.T.Helper()
 	c := NewCompiler()

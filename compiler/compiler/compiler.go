@@ -88,6 +88,8 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 	switch expr := expr.(type) {
 	case *ast.IntegerLiteral:
 		return c.compileIntegerLiteral(expr)
+	case *ast.BooleanExpression:
+		return c.compileBooleanExpression(expr)
 		// TODO support more expression type
 	case *ast.InfixExpression:
 		return c.compileInfixOperator(expr)
@@ -99,6 +101,15 @@ func (c *Compiler) compileIntegerLiteral(literal *ast.IntegerLiteral) error {
 	integer := &object.Integer{Value: literal.Value}
 	index := c.constants.AddConstant(integer)
 	c.emit(code.OpConstant, index.IntValue())
+	return nil
+}
+
+func (c *Compiler) compileBooleanExpression(literal *ast.BooleanExpression) error {
+	if literal.Value {
+		c.emit(code.OpTrue)
+	} else {
+		c.emit(code.OpFalse)
+	}
 	return nil
 }
 

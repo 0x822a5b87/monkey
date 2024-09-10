@@ -14,6 +14,8 @@ const (
 	OpSub
 	OpMul
 	OpDiv
+	OpTrue
+	OpFalse
 )
 
 var definitions = map[Opcode]*Definition{
@@ -29,10 +31,12 @@ var definitions = map[Opcode]*Definition{
 	// Whereas the first two explicitly reuse the value their child-expression nodes produce,
 	// but expression statement merely wrap expressions so the can occur on their own. The value they produce is not
 	// reuse, by definition. So, we need to emit a OpPop for every expression statement to clear it up.
-	OpPop: {"OpPop", "", []int{}},
-	OpSub: {"OpSub", "-", []int{}},
-	OpMul: {"OpMul", "*", []int{}},
-	OpDiv: {"OpDiv", "/", []int{}},
+	OpPop:   {"OpPop", "", []int{}},
+	OpSub:   {"OpSub", "-", []int{}},
+	OpMul:   {"OpMul", "*", []int{}},
+	OpDiv:   {"OpDiv", "/", []int{}},
+	OpTrue:  {"OpTrue", "", []int{}},
+	OpFalse: {"OpFalse", "", []int{}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

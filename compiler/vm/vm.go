@@ -60,6 +60,10 @@ func (v *Vm) Run() error {
 			err = v.executeBinaryOperation(op)
 		case code.OpDiv:
 			err = v.executeBinaryOperation(op)
+		case code.OpTrue:
+			err = v.opBoolean(op)
+		case code.OpFalse:
+			err = v.opBoolean(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -127,6 +131,17 @@ func (v *Vm) opConstant() error {
 	constantIndex := code.ReadUint16(v.instructions[v.ip+1:])
 	v.incrementIp(2)
 	return v.push(v.constants.GetConstant(constantIndex))
+}
+
+func (v *Vm) opBoolean(op code.Opcode) error {
+	switch op {
+	case code.OpTrue:
+		return v.push(object.NativeTrue)
+	case code.OpFalse:
+		return v.push(object.NativeFalse)
+	default:
+		return common.NewErrTypeMismatch("Boolean", string(op))
+	}
 }
 
 // opAdd add two number from the stack and push the result back onto the stack

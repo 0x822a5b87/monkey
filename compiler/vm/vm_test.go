@@ -64,6 +64,15 @@ func TestIntegerArithmetic(t *testing.T) {
 	runVmTests(t, testCases)
 }
 
+func TestBooleanArithmetic(t *testing.T) {
+	testCases := []vmTestCase{
+		{"true", true},
+		{"false", false},
+	}
+
+	runVmTests(t, testCases)
+}
+
 func runCompilerTests(t *testing.T, testCases []compilerTestCase) {
 	t.Helper()
 
@@ -100,6 +109,8 @@ func testExpectedObject(t *testing.T, caseIndex int, expected interface{}, actua
 	switch expected := expected.(type) {
 	case int:
 		testIntegerObject(t, caseIndex, int64(expected), actual)
+	case bool:
+		testBooleanObject(t, caseIndex, expected, actual)
 	default:
 		t.Fatalf("test case [%d] wrong type [%s] for test", caseIndex, expected)
 	}
@@ -114,6 +125,18 @@ func testIntegerObject(t *testing.T, caseIndex int, expected int64, actual objec
 
 	if expected != integerObj.Value {
 		t.Fatalf("test case [%d] object has wrong value. expected = [%d], got = [%d]", caseIndex, expected, integerObj.Value)
+	}
+}
+
+func testBooleanObject(t *testing.T, caseIndex int, expected bool, actual object.Object) {
+	t.Helper()
+	b, ok := actual.(*object.Boolean)
+	if !ok {
+		t.Fatalf("test case [%d] object is not Boolean. got=%T (%+v)", caseIndex, actual, actual)
+	}
+
+	if expected != b.Value {
+		t.Fatalf("test case [%d] object has wrong value. expected = [%t], got = [%t]", caseIndex, expected, b.Value)
 	}
 }
 
