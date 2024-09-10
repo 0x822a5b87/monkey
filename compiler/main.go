@@ -12,7 +12,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Hello %s! This is the Monkey Programming language!\n", u.Username)
+	fmt.Printf("Hello %s! This is the compiler of Monkey Programming language!\n", u.Username)
 
-	repl.Start(os.Stdin, os.Stdout)
+	repl.Start("c", os.Stdin, os.Stdout)
 }
