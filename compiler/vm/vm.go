@@ -3,8 +3,10 @@ package vm
 import (
 	"0x822a5b87/monkey/compiler/code"
 	"0x822a5b87/monkey/compiler/compiler"
+	"0x822a5b87/monkey/interpreter/common"
 	"0x822a5b87/monkey/interpreter/object"
 	"errors"
+	"fmt"
 )
 
 const StackSize = 2048
@@ -40,20 +42,21 @@ func NewVm(code *compiler.ByteCode) *Vm {
 // In this method, we use code.ReadUint16 instead of code.ReadOperands for the same reason we don't use code.Lookup
 // when fetching the instruction: performance.
 func (v *Vm) Run() error {
+	var err error
 	// In every loop, we reach the end of a single instruction and increment by 1 byte to move to the next instruction
 	for ; v.hasNext(); v.incrementIp(1) {
 		op := v.currentOpcode()
 		switch op {
 		case code.OpConstant:
-			// ATTENTION: let's recap what we did with the object.Integer in the compiler
-			// we construct an Integer object and added it to the constant pool.
-			// Then, we emitted an instruction with the index of the Integer object in the constant pool to bytecode
-			constantIndex := code.ReadUint16(v.instructions[v.ip+1:])
-			v.incrementIp(2)
-			err := v.push(v.constants.GetConstant(constantIndex))
-			if err != nil {
-				return err
-			}
+			err = v.opConstant()
+		case code.OpAdd:
+			err = v.opAdd()
+		default:
+			return fmt.Errorf("wrong type of Opcode : [%d]", op)
+		}
+
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -92,4 +95,41 @@ func (v *Vm) incrementIp(delta int) {
 
 func (v *Vm) decrementIp(delta int) {
 	v.ip -= delta
+}
+
+func (v *Vm) pop() object.Object {
+	topElement := v.StackTop()
+	if topElement != nil {
+		v.sp--
+	}
+	return topElement
+}
+
+func (v *Vm) opConstant() error {
+	// ATTENTION: let's recap what we did with the object.Integer in the compiler
+	// we construct an Integer object and added it to the constant pool.
+	// Then, we emitted an instruction with the index of the Integer object in the constant pool to bytecode
+	constantIndex := code.ReadUint16(v.instructions[v.ip+1:])
+	v.incrementIp(2)
+	return v.push(v.constants.GetConstant(constantIndex))
+}
+
+func (v *Vm) opAdd() error {
+	lhs := v.pop()
+	rhs := v.pop()
+	if lhs == nil || rhs == nil {
+		return common.NewErrEmptyStack("OpAdd")
+	}
+
+	left, ok := lhs.(object.Add)
+	if !ok {
+		return common.NewErrTypeMismatch("integer", string(left.Type()))
+	}
+
+	right, ok := rhs.(object.Add)
+	if !ok {
+		return common.NewErrTypeMismatch("integer", string(right.Type()))
+	}
+
+	return v.push(left.Add(right))
 }

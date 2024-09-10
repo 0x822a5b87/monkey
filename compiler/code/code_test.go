@@ -12,6 +12,7 @@ func TestMake(t *testing.T) {
 		expected []byte
 	}{
 		{OpConstant, []int{65534}, []byte{byte(OpConstant), 255, 254}},
+		{OpAdd, []int{}, []byte{byte(OpAdd)}},
 	}
 
 	for i, testCase := range testCases {
@@ -33,10 +34,16 @@ func TestInstructionsString(t *testing.T) {
 		Make(OpConstant, 1),
 		Make(OpConstant, 2),
 		Make(OpConstant, 65535),
+		Make(OpAdd),
+		Make(OpConstant, 2),
+		Make(OpConstant, 65535),
 	}
 	expected := `0000 OpConstant 1
 0003 OpConstant 2
-0006 OpConstant 65535`
+0006 OpConstant 65535
+0009 OpAdd
+0010 OpConstant 2
+0013 OpConstant 65535`
 
 	concat := Instructions{}
 	for _, ins := range instructions {
@@ -52,8 +59,9 @@ func TestInstructionsString(t *testing.T) {
 	if err != nil {
 		info.Fatalf(err.Error())
 	}
+
 	if s != expected {
-		info.Fatalf("instructions wrongly formatted.\nexpected=[%s]\nactual=[%s]", expected, s)
+		info.Fatalf("instructions wrongly formatted.\nexpect=[%q]\nactual=[%q]", expected, s)
 	}
 }
 

@@ -109,7 +109,7 @@ func (c *Compiler) compileInfixOperator(infixExpr *ast.InfixExpression) error {
 func (c *Compiler) compileOperator(operator string) error {
 	switch operator {
 	case "+":
-		// TODO support operator add
+		c.emit(code.OpAdd)
 		return nil
 		// TODO support more operator
 	}

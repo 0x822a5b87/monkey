@@ -28,3 +28,11 @@ func (e ErrorCode) Sting() string {
 func NewErrUnsupportedCompilingNode(nodeName string) error {
 	return errUnsupportedCompilingNode.format(nodeName)
 }
+
+func NewErrEmptyStack(nodeName string) error {
+	return errEmptyStack.format(nodeName)
+}
+
+func NewErrTypeMismatch(expectType, actualType string) error {
+	return errTypeMismatch.format(expectType, actualType)
+}

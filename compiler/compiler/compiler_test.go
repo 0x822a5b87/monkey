@@ -19,6 +19,7 @@ func TestMinimalCompiler(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
 			},
 		},
 	}
@@ -31,12 +32,6 @@ func TestMinimalCompiler(t *testing.T) {
 		}
 		runCompilerTest(testCaseInfo, &testCase)
 	}
-}
-
-type compilerTestCase struct {
-	input                string
-	expectedConstants    []interface{}
-	expectedInstructions []code.Instructions
 }
 
 func runCompilerTest(testCaseInfo *util.TestCaseInfo, testCase *compilerTestCase) {
@@ -55,19 +50,20 @@ func runCompilerTest(testCaseInfo *util.TestCaseInfo, testCase *compilerTestCase
 
 func testInstructions(info *util.TestCaseInfo, expectedInstructions []code.Instructions, actualInstruction code.Instructions) {
 	info.Helper()
+	info.T.Helper()
 	var expectedLen = 0
 	for _, instruction := range expectedInstructions {
 		expectedLen += instruction.Len()
 	}
 	if expectedLen != len(actualInstruction) {
-		info.T.Fatalf("wrong instructions length.\nexpected=%d\nactual=%d", expectedLen, len(actualInstruction))
+		info.T.Fatalf("wrong instructions length.\nexpect=%d\nactual=%d", expectedLen, len(actualInstruction))
 	}
 
 	var byteOffset = 0
 	for i, expected := range expectedInstructions {
 		nextInstructionByteOffset := byteOffset + len(expected)
 		current := actualInstruction[byteOffset:nextInstructionByteOffset]
-		byteOffset += nextInstructionByteOffset
+		byteOffset += len(expected)
 		for j, ins := range expected {
 			if current[j] != ins {
 				err, curStr := code.BytesToInstruction(current).String()
@@ -78,7 +74,7 @@ func testInstructions(info *util.TestCaseInfo, expectedInstructions []code.Instr
 				if err != nil {
 					info.T.Fatalf("error lookup op : %s", err.Error())
 				}
-				info.T.Fatalf("instructionOffset = [%d] not match\nexpected=%s\nactual=%s", i, expectedStr, curStr)
+				info.T.Fatalf("instructionOffset = [%d] not match\nexpect=%s\nactual=%s", i, expectedStr, curStr)
 			}
 		}
 	}
@@ -86,7 +82,7 @@ func testInstructions(info *util.TestCaseInfo, expectedInstructions []code.Instr
 
 func testConstants(info *util.TestCaseInfo, expectedConstants []interface{}, constants *code.Constants) {
 	if len(expectedConstants) != constants.Len() {
-		info.T.Fatalf("wrong number of constants. expected=%d,actual=%d", len(expectedConstants), constants.Len())
+		info.T.Fatalf("wrong number of constants. expect=%d,actual=%d", len(expectedConstants), constants.Len())
 	}
 	for i, constant := range expectedConstants {
 		switch expected := constant.(type) {
@@ -125,4 +121,10 @@ func testIntegerObject(info *util.TestCaseInfo, obj object.Object, expected int6
 	if integerObj.Value != expected {
 		info.Fatalf("expect [%d], got [%d]", expected, integerObj.Value)
 	}
+}
+
+type compilerTestCase struct {
+	input                string
+	expectedConstants    []interface{}
+	expectedInstructions []code.Instructions
 }

@@ -9,10 +9,13 @@ const (
 	// When the VM executes OpConstant it retrieves the constant using the operand as an index and pushes
 	// it on to the stack.
 	OpConstant Opcode = iota
+	OpAdd
 )
 
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
+	// tells the VM to pop the two topmost elements off the stack, add them and push the result back on the stack
+	OpAdd: {"OpAdd", []int{}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

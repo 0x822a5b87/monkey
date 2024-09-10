@@ -4,6 +4,8 @@ import "fmt"
 
 var (
 	errUnsupportedCompilingNode = errorPattern{100003, "unsupported compiling node for %s"}
+	errEmptyStack               = errorPattern{100004, "the stack is empty, cannot do pop for %s"}
+	errTypeMismatch             = errorPattern{100005, "type mismatch : expect [%s], actual [%s]"}
 )
 
 type errorPattern struct {
