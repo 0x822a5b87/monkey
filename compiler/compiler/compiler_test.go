@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestMinimalCompiler(t *testing.T) {
+func TestIntegerCompiler(t *testing.T) {
 	testCases := []compilerTestCase{
 		{
 			input:             `1 + 2`,
@@ -53,12 +53,33 @@ func TestMinimalCompiler(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+		{
+			// the prefix operator minus.
+			// The expected behavior is that when we encounter a negative integer, we push the absolute value to the stack.
+			// we compile the index of the integer and OpMinus into an instruction, During runtime, the vm will decompile it.
+			input:             `-2147483648`,
+			expectedConstants: []interface{}{2147483648},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpMinus),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             `-1`,
+			expectedConstants: []interface{}{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpMinus),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 
 	for i, testCase := range testCases {
 		testCaseInfo := &util.TestCaseInfo{
 			T:             t,
-			TestFnName:    "TestMinimalCompiler",
+			TestFnName:    "TestIntegerCompiler",
 			TestCaseIndex: i,
 		}
 		runCompilerTest(testCaseInfo, &testCase)
@@ -139,7 +160,6 @@ func TestBooleanExpressions(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
-
 		{
 			input:             "true != false",
 			expectedConstants: []any{},
@@ -147,6 +167,24 @@ func TestBooleanExpressions(t *testing.T) {
 				code.Make(code.OpTrue),
 				code.Make(code.OpFalse),
 				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "!true",
+			expectedConstants: []any{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpBang),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "!false",
+			expectedConstants: []any{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpFalse),
+				code.Make(code.OpBang),
 				code.Make(code.OpPop),
 			},
 		},

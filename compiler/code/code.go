@@ -20,6 +20,8 @@ const (
 	OpNotEqual
 	OpGreaterThan
 	OpLessThan
+	OpMinus
+	OpBang
 )
 
 var definitions = map[Opcode]*Definition{
@@ -45,6 +47,8 @@ var definitions = map[Opcode]*Definition{
 	OpNotEqual:    {"OpNotEqual", "!=", []int{}},
 	OpGreaterThan: {"OpGreaterThan", ">", []int{}},
 	OpLessThan:    {"OpLessThan", "<", []int{}},
+	OpMinus:       {"OpMinus", "-", []int{}},
+	OpBang:        {"OpBang", "!", []int{}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

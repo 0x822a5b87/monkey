@@ -6,6 +6,7 @@ import (
 	"0x822a5b87/monkey/interpreter/common"
 	"0x822a5b87/monkey/interpreter/object"
 	"0x822a5b87/monkey/interpreter/token"
+	"fmt"
 )
 
 type instructionIndex int
@@ -94,7 +95,9 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compileBooleanExpression(expr)
 		// TODO support more expression type
 	case *ast.InfixExpression:
-		return c.compileInfixOperator(expr)
+		return c.compileInfixExpression(expr)
+	case *ast.PrefixExpression:
+		return c.compilePrefixExpression(expr)
 	}
 	return common.NewErrUnsupportedCompilingNode(expr.String())
 }
@@ -115,7 +118,7 @@ func (c *Compiler) compileBooleanExpression(literal *ast.BooleanExpression) erro
 	return nil
 }
 
-func (c *Compiler) compileInfixOperator(infixExpr *ast.InfixExpression) error {
+func (c *Compiler) compileInfixExpression(infixExpr *ast.InfixExpression) error {
 	err := c.compileExpression(infixExpr.Lhs)
 	if err != nil {
 		return err
@@ -124,10 +127,19 @@ func (c *Compiler) compileInfixOperator(infixExpr *ast.InfixExpression) error {
 	if err != nil {
 		return err
 	}
-	return c.compileOperator(infixExpr.Operator)
+	return c.compileInfixOperator(infixExpr.Operator)
 }
 
-func (c *Compiler) compileOperator(operator string) error {
+func (c *Compiler) compilePrefixExpression(prefixExpr *ast.PrefixExpression) error {
+	err := c.compileExpression(prefixExpr.Right)
+	if err != nil {
+		return err
+	}
+
+	return c.compilePrefixOperator(prefixExpr.Operator)
+}
+
+func (c *Compiler) compileInfixOperator(operator string) error {
 	switch operator {
 	case string(token.PLUS):
 		c.emit(code.OpAdd)
@@ -156,7 +168,21 @@ func (c *Compiler) compileOperator(operator string) error {
 		// TODO support more operator
 	}
 
-	return common.NewErrUnsupportedCompilingNode(operator)
+	return common.NewErrUnsupportedCompilingNode(fmt.Sprintf(" infix [%s]", operator))
+}
+
+func (c *Compiler) compilePrefixOperator(operator string) error {
+	switch operator {
+	case string(token.SUB):
+		c.emit(code.OpMinus)
+		return nil
+	case string(token.BANG):
+		c.emit(code.OpBang)
+		return nil
+		// TODO support more operator
+	}
+
+	return common.NewErrUnsupportedCompilingNode(fmt.Sprintf(" prefix [%s]", operator))
 }
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) instructionIndex {

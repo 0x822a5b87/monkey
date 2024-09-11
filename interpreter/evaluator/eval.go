@@ -157,7 +157,7 @@ func evalInfixExpressionIntegerLiteral(operator token.TokenType, lhsIntegerObj, 
 
 func evalPrefixExpression(prefix *ast.PrefixExpression, env *object.Environment) object.Object {
 	rhs := Eval(prefix.Right, env)
-	err := prefixExpressionTypeCheck(prefix.Operator, rhs)
+	err := PrefixExpressionTypeCheck(prefix.Operator, rhs)
 	if err != nil {
 		return err
 	}

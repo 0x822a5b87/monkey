@@ -56,6 +56,8 @@ func (v *Vm) Run() error {
 			err = v.opBoolean(op)
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpLessThan:
 			err = v.executeBinaryOperation(op)
+		case code.OpBang, code.OpMinus:
+			err = v.executePrefixOpcode(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -217,7 +219,41 @@ func (v *Vm) executeBinaryOperation(op code.Opcode) error {
 	}
 }
 
+func (v *Vm) executePrefixOpcode(op code.Opcode) error {
+	lhs := v.pop()
+	definition, _ := code.Lookup(op)
+	if lhs == nil {
+		return common.NewErrEmptyStack(definition.Name)
+	}
+
+	switch op {
+	case code.OpBang:
+		return v.opBang(lhs)
+	case code.OpMinus:
+		return v.opMinus(lhs)
+	default:
+		return common.NewErrUnsupportedBinaryExpr(definition.Name)
+	}
+}
+
 func (v *Vm) opPop() error {
 	v.pop()
 	return nil
+}
+
+func (v *Vm) opBang(lhs object.Object) error {
+	switch lhs {
+	case object.NativeFalse, object.NativeNull:
+		return v.push(object.NativeTrue)
+	case object.NativeTrue:
+		return v.push(object.NativeFalse)
+	default:
+		return v.push(object.NativeFalse)
+
+	}
+}
+
+func (v *Vm) opMinus(lhs object.Object) error {
+	left := lhs.(object.Negative)
+	return v.push(left.Negative())
 }

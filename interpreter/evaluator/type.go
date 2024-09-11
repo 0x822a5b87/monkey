@@ -46,7 +46,7 @@ func InfixExpressionTypeCheck(operator string, lhs, rhs object.Object) *object.E
 	return nil
 }
 
-func prefixExpressionTypeCheck(operator string, operand object.Object) *object.Error {
+func PrefixExpressionTypeCheck(operator string, operand object.Object) *object.Error {
 	if operand.Type() == object.ObjError {
 		return operand.(*object.Error)
 	}
