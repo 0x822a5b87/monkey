@@ -83,7 +83,75 @@ func TestBooleanExpressions(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+
+		{
+			input: "1 > 2",
+			expectedConstants: []any{
+				1,
+				2,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpGreaterThan),
+				code.Make(code.OpPop),
+			},
+		},
+
+		{
+			input: "100 < 200",
+			expectedConstants: []any{
+				100,
+				200,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpLessThan),
+				code.Make(code.OpPop),
+			},
+		},
+
+		{
+			input: "123 == 321",
+			expectedConstants: []any{
+				123,
+				321,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpEqual),
+				code.Make(code.OpPop),
+			},
+		},
+
+		{
+			input: "2147483647 != 2147483647",
+			expectedConstants: []any{
+				2147483647,
+				2147483647,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			},
+		},
+
+		{
+			input:             "true != false",
+			expectedConstants: []any{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpFalse),
+				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			},
+		},
 	}
+
 	for i, testCase := range testCases {
 		testCaseInfo := &util.TestCaseInfo{
 			T:             t,

@@ -16,10 +16,12 @@ type Compiler struct {
 }
 
 func NewCompiler() *Compiler {
-	return &Compiler{
+	c := &Compiler{
 		instructions: make(code.Instructions, 0),
 		constants:    code.NewConstants(),
 	}
+
+	return c
 }
 
 // Compile
@@ -139,8 +141,21 @@ func (c *Compiler) compileOperator(operator string) error {
 	case string(token.SLASH):
 		c.emit(code.OpDiv)
 		return nil
+	case string(token.GT):
+		c.emit(code.OpGreaterThan)
+		return nil
+	case string(token.LT):
+		c.emit(code.OpLessThan)
+		return nil
+	case string(token.EQ):
+		c.emit(code.OpEqual)
+		return nil
+	case string(token.NotEq):
+		c.emit(code.OpNotEqual)
+		return nil
 		// TODO support more operator
 	}
+
 	return common.NewErrUnsupportedCompilingNode(operator)
 }
 
@@ -149,4 +164,9 @@ func (c *Compiler) emit(op code.Opcode, operands ...int) instructionIndex {
 	var index = instructionIndex(len(c.instructions))
 	c.instructions = append(c.instructions, instruction...)
 	return index
+}
+
+func (c *Compiler) compileOperatorPlus() error {
+	c.emit(code.OpAdd)
+	return nil
 }

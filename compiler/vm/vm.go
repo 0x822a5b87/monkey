@@ -50,20 +50,12 @@ func (v *Vm) Run() error {
 		switch op {
 		case code.OpConstant:
 			err = v.opConstant()
-		case code.OpAdd:
-			err = v.executeBinaryOperation(op)
 		case code.OpPop:
 			err = v.opPop()
-		case code.OpSub:
-			err = v.executeBinaryOperation(op)
-		case code.OpMul:
-			err = v.executeBinaryOperation(op)
-		case code.OpDiv:
-			err = v.executeBinaryOperation(op)
-		case code.OpTrue:
+		case code.OpTrue, code.OpFalse:
 			err = v.opBoolean(op)
-		case code.OpFalse:
-			err = v.opBoolean(op)
+		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpLessThan:
+			err = v.executeBinaryOperation(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -169,6 +161,27 @@ func (v *Vm) opDiv(lhs, rhs object.Object) error {
 	return v.push(left.Divide(right))
 }
 
+func (v *Vm) opEqual(lhs, rhs object.Object) error {
+	left := lhs.(object.Equatable)
+	right := rhs.(object.Equatable)
+	return v.push(left.Equal(right))
+}
+func (v *Vm) opNotEqual(lhs, rhs object.Object) error {
+	left := lhs.(object.Equatable)
+	right := rhs.(object.Equatable)
+	return v.push(left.NotEqual(right))
+}
+func (v *Vm) opGreaterThan(lhs, rhs object.Object) error {
+	left := lhs.(object.Comparable)
+	right := rhs.(object.Comparable)
+	return v.push(left.GreaterThan(right))
+}
+func (v *Vm) opLessThan(lhs, rhs object.Object) error {
+	left := lhs.(object.Comparable)
+	right := rhs.(object.Comparable)
+	return v.push(left.LessThan(right))
+}
+
 func (v *Vm) executeBinaryOperation(op code.Opcode) error {
 	rhs := v.pop()
 	lhs := v.pop()
@@ -191,6 +204,14 @@ func (v *Vm) executeBinaryOperation(op code.Opcode) error {
 		return v.opMul(lhs, rhs)
 	case code.OpDiv:
 		return v.opDiv(lhs, rhs)
+	case code.OpEqual:
+		return v.opEqual(lhs, rhs)
+	case code.OpNotEqual:
+		return v.opNotEqual(lhs, rhs)
+	case code.OpGreaterThan:
+		return v.opGreaterThan(lhs, rhs)
+	case code.OpLessThan:
+		return v.opLessThan(lhs, rhs)
 	default:
 		return common.NewErrUnsupportedBinaryExpr(definition.Name)
 	}
