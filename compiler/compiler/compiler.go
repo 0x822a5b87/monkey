@@ -169,7 +169,6 @@ func (c *Compiler) compileIfExpression(ifExpr *ast.IfExpression) error {
 		return err
 	}
 
-	// TODO jump to alternative
 	jumpNotTruthyIndex := c.emit(code.OpJumpNotTruthy, 0)
 	err = c.Compile(ifExpr.Consequence)
 	if err != nil {
@@ -177,7 +176,6 @@ func (c *Compiler) compileIfExpression(ifExpr *ast.IfExpression) error {
 	}
 
 	if ifExpr.Alternative != nil {
-		// TODO jump to end of if expression
 		jumpIndex := c.emit(code.OpJump, 0)
 		err = c.Compile(ifExpr.Alternative)
 		if err != nil {
@@ -186,7 +184,9 @@ func (c *Compiler) compileIfExpression(ifExpr *ast.IfExpression) error {
 
 		// jump to length - 1, as the for loop will increment 1 automatically
 		c.replaceOperand(jumpIndex, c.instructions.Len()-1)
-		c.replaceOperand(jumpNotTruthyIndex, jumpIndex.add(-1))
+
+		// jump to the end byte of NOT_MATTER_WHAT_JUMP
+		c.replaceOperand(jumpNotTruthyIndex, jumpIndex.add(2))
 	} else {
 		var jumpIndex = instructionIndex(len(c.instructions))
 		c.replaceOperand(jumpNotTruthyIndex, jumpIndex.add(-1))
