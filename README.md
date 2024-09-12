@@ -243,3 +243,60 @@ mindmap
     	Boolean
 ```
 
+## compiler
+
+### Jumps
+
+```mermaid
+---
+title: overview
+---
+block-beta
+columns 4
+
+0000:1 OpConstant0:3
+0001:1 OpConstant1:3
+0002:1 OpGreaterThan:3
+
+0003:1 jump_if_not_true["JUMP_IF_NOT_TRUE"]:2 TO_0008["0008"] 
+
+
+0004:1 OpConstant2:3
+0005 OpConstant3:3
+0006 OpAdd:3
+
+0007 jump_no_matter_what["JUMP_NO_MATTER_WHAT"]:2 TO_0011["0011"]
+
+0008 OpConstant4:3
+0009 OpConstant5:3
+0010 OpMinus:3
+
+0011 Code["..."]:3
+
+jump_if_not_true --> 0008
+jump_no_matter_what --> 0011
+
+classDef front 1,fill:#696,stroke:#333;
+classDef back fill:#969,stroke:#333;
+classDef jump_to fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+  
+class 0000 front
+class 0001 front
+class 0002 front
+class 0003 front
+class 0004 front
+class 0005 front
+class 0006 front
+class 0007 front
+class 0008 front
+class 0009 front
+class 0010 front
+class 0011 front
+
+class jump_if_not_true back
+class jump_no_matter_what back
+
+class TO_0008 jump_to
+class TO_0011 jump_to
+```
+

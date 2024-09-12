@@ -22,6 +22,8 @@ const (
 	OpLessThan
 	OpMinus
 	OpBang
+	OpJumpNotTruthy
+	OpJump
 )
 
 var definitions = map[Opcode]*Definition{
@@ -49,6 +51,10 @@ var definitions = map[Opcode]*Definition{
 	OpLessThan:    {"OpLessThan", "<", []int{}},
 	OpMinus:       {"OpMinus", "-", []int{}},
 	OpBang:        {"OpBang", "!", []int{}},
+	// tell the VM to only jump if the value on top of stack is not monkey truthy
+	// The operand of OpJumpNotTruthy and OpJump is 16-bit wide.
+	OpJumpNotTruthy: {"OpJumpNotTruthy", "", []int{2}},
+	OpJump:          {"OpJump", "!", []int{2}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

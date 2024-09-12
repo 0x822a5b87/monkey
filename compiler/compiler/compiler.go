@@ -11,6 +11,10 @@ import (
 
 type instructionIndex int
 
+func (i instructionIndex) add(delta int) int {
+	return int(i) + delta
+}
+
 type Compiler struct {
 	instructions code.Instructions
 	constants    *code.Constants
@@ -71,6 +75,8 @@ func (c *Compiler) compileStatement(statement ast.Statement) error {
 	case *ast.ExpressionStatement:
 		return c.compileExpressionStatement(stmt)
 		// TODO support more statement type
+	case *ast.BlockStatement:
+		return c.compileBlockStatement(stmt)
 	}
 
 	return common.NewErrUnsupportedCompilingNode(statement.String())
@@ -81,9 +87,25 @@ func (c *Compiler) compileExpressionStatement(statement *ast.ExpressionStatement
 	if err != nil {
 		return err
 	}
-	// expression will produce an object on stack which can produce a stack overflow.
-	// we assert that the compiled expression statement should be followed by an OpPop instruction.
-	c.emit(code.OpPop)
+
+	switch statement.Expr.(type) {
+	case *ast.IfExpression:
+		return nil
+	default:
+		// expression will produce an object on stack which can produce a stack overflow.
+		// we assert that the compiled expression statement should be followed by an OpPop instruction.
+		c.emit(code.OpPop)
+		return nil
+	}
+}
+
+func (c *Compiler) compileBlockStatement(statement *ast.BlockStatement) error {
+	for _, stmt := range statement.Statements {
+		err := c.Compile(stmt)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -98,6 +120,8 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compileInfixExpression(expr)
 	case *ast.PrefixExpression:
 		return c.compilePrefixExpression(expr)
+	case *ast.IfExpression:
+		return c.compileIfExpression(expr)
 	}
 	return common.NewErrUnsupportedCompilingNode(expr.String())
 }
@@ -137,6 +161,38 @@ func (c *Compiler) compilePrefixExpression(prefixExpr *ast.PrefixExpression) err
 	}
 
 	return c.compilePrefixOperator(prefixExpr.Operator)
+}
+
+func (c *Compiler) compileIfExpression(ifExpr *ast.IfExpression) error {
+	err := c.compileExpression(ifExpr.Condition)
+	if err != nil {
+		return err
+	}
+
+	// TODO jump to alternative
+	jumpNotTruthyIndex := c.emit(code.OpJumpNotTruthy, 0)
+	err = c.Compile(ifExpr.Consequence)
+	if err != nil {
+		return err
+	}
+
+	if ifExpr.Alternative != nil {
+		// TODO jump to end of if expression
+		jumpIndex := c.emit(code.OpJump, 0)
+		err = c.Compile(ifExpr.Alternative)
+		if err != nil {
+			return err
+		}
+
+		// jump to length - 1, as the for loop will increment 1 automatically
+		c.replaceOperand(jumpIndex, c.instructions.Len()-1)
+		c.replaceOperand(jumpNotTruthyIndex, jumpIndex.add(-1))
+	} else {
+		var jumpIndex = instructionIndex(len(c.instructions))
+		c.replaceOperand(jumpNotTruthyIndex, jumpIndex.add(-1))
+	}
+
+	return nil
 }
 
 func (c *Compiler) compileInfixOperator(operator string) error {
@@ -190,6 +246,18 @@ func (c *Compiler) emit(op code.Opcode, operands ...int) instructionIndex {
 	var index = instructionIndex(len(c.instructions))
 	c.instructions = append(c.instructions, instruction...)
 	return index
+}
+
+func (c *Compiler) replaceOperand(instructionBeginIndex instructionIndex, operands ...int) {
+	op := c.instructions[instructionBeginIndex]
+	instruction := code.Make(code.Opcode(op), operands...)
+	c.replaceInstruction(instructionBeginIndex, instruction)
+}
+
+func (c *Compiler) replaceInstruction(instructionBeginIndex instructionIndex, another code.Instructions) {
+	for i := 0; i < another.Len(); i++ {
+		c.instructions[instructionBeginIndex.add(i)] = another[i]
+	}
 }
 
 func (c *Compiler) compileOperatorPlus() error {

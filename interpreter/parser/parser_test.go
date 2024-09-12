@@ -400,7 +400,7 @@ func TestIfExpression(t *testing.T) {
 
 	ifExpr, ok := ifStmt.Expr.(*ast.IfExpression)
 	if !ok {
-		t.Errorf("if expression's Expr expected IfExpression, actually = [%s]", reflect.TypeOf(ifStmt.Expr))
+		t.Errorf("if expression's Expr expected compileIfExpression, actually = [%s]", reflect.TypeOf(ifStmt.Expr))
 	}
 
 	if !testInfixExpression(t, "x < y", ifExpr.Condition, "x", "<", "y") {

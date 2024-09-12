@@ -200,6 +200,67 @@ func TestBooleanExpressions(t *testing.T) {
 	}
 }
 
+func TestCondition(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input: `
+if (true) {
+	10;
+};
+3333;
+`,
+			expectedConstants: []any{10, 3333},
+			// note that OpJumpNotTruthy tell VM jump to 0007, that's because in Compiler#Run()'s for loop,
+			// it will increment the instruction pointer by one, so we only need to jump to the byte preceding the target instruction.
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),             // 0000
+				code.Make(code.OpJumpNotTruthy, 7), // 0001
+				code.Make(code.OpConstant, 0),      // 0004
+				code.Make(code.OpPop),              // 0007
+				code.Make(code.OpConstant, 1),      // 0008
+				code.Make(code.OpPop),              // 0009
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		testCaseInfo := &util.TestCaseInfo{
+			T:             t,
+			TestFnName:    "TestCondition",
+			TestCaseIndex: i,
+		}
+		runCompilerTest(testCaseInfo, &testCase)
+	}
+}
+
+func TestExpressionStatement(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input: `
+if (true) {
+	10;
+};
+`,
+			expectedConstants: []any{10},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),             // 0000
+				code.Make(code.OpJumpNotTruthy, 7), // 0001
+				code.Make(code.OpConstant, 0),      // 0004
+				code.Make(code.OpPop),              // 0007
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		testCaseInfo := &util.TestCaseInfo{
+			T:             t,
+			TestFnName:    "TestExpressionStatement",
+			TestCaseIndex: i,
+		}
+		runCompilerTest(testCaseInfo, &testCase)
+	}
+}
+
 func runCompilerTest(testCaseInfo *util.TestCaseInfo, testCase *compilerTestCase) {
 	testCaseInfo.T.Helper()
 	c := NewCompiler()
@@ -221,6 +282,7 @@ func testInstructions(info *util.TestCaseInfo, expectedInstructions []code.Instr
 	for _, instruction := range expectedInstructions {
 		expectedLen += instruction.Len()
 	}
+
 	if expectedLen != len(actualInstruction) {
 		info.T.Fatalf("wrong instructions length.\nexpect=%d\nactual=%d", expectedLen, len(actualInstruction))
 	}
@@ -240,7 +302,7 @@ func testInstructions(info *util.TestCaseInfo, expectedInstructions []code.Instr
 				if err != nil {
 					info.T.Fatalf("error lookup op : %s", err.Error())
 				}
-				info.T.Fatalf("instructionOffset = [%d] not match\nexpect=%s\nactual=%s", i, expectedStr, curStr)
+				info.T.Errorf("instructionOffset = [%d] not match\nexpect=%s\nactual=%s", i, expectedStr, curStr)
 			}
 		}
 	}
