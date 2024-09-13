@@ -58,6 +58,10 @@ func (v *Vm) Run() error {
 			err = v.executeBinaryOperation(op)
 		case code.OpBang, code.OpMinus:
 			err = v.executePrefixOpcode(op)
+		case code.OpJumpNotTruthy:
+			err = v.executeNotTruthyJump(op)
+		case code.OpJump:
+			err = v.executeJump(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -236,6 +240,46 @@ func (v *Vm) executePrefixOpcode(op code.Opcode) error {
 	}
 }
 
+func (v *Vm) executeNotTruthyJump(op code.Opcode) error {
+	definition, _ := code.Lookup(op)
+
+	lhs := v.pop()
+	if lhs == nil {
+		return common.NewErrEmptyStack(definition.Name)
+	}
+
+	if !v.isTruthy(lhs) {
+		return v.doJump(definition)
+	} else {
+		// skip operands
+		v.incrementIp(2)
+		return nil
+	}
+}
+
+func (v *Vm) executeJump(op code.Opcode) error {
+	definition, _ := code.Lookup(op)
+	return v.doJump(definition)
+}
+
+func (v *Vm) doJump(definition *code.Definition) error {
+	operands, _ := code.ReadOperands(definition, v.instructions[v.ip+1:])
+	if len(operands) != 1 {
+		return common.NewErrOperandsCount(1, len(operands))
+	}
+	v.ip = operands[0]
+	return nil
+}
+
+func (v *Vm) isTruthy(obj object.Object) bool {
+	switch obj {
+	case object.NativeNull, object.NativeFalse:
+		return false
+	default:
+		return true
+	}
+}
+
 func (v *Vm) opPop() error {
 	v.pop()
 	return nil
@@ -249,11 +293,14 @@ func (v *Vm) opBang(lhs object.Object) error {
 		return v.push(object.NativeFalse)
 	default:
 		return v.push(object.NativeFalse)
-
 	}
 }
 
 func (v *Vm) opMinus(lhs object.Object) error {
 	left := lhs.(object.Negative)
 	return v.push(left.Negative())
+}
+
+func (v *Vm) operands() {
+
 }

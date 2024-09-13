@@ -99,6 +99,22 @@ func TestBooleanArithmetic(t *testing.T) {
 	runVmTests(t, testCases)
 }
 
+func TestConditionals(t *testing.T) {
+	testCases := []vmTestCase{
+		{"if (true) { 10 }", 10},
+		{"if (true) { 10 } else { 20 }", 10},
+		{"if (false) { 10 } else { 20 }", 20},
+		{"if (!true) { 10 } else { 20 }", 20},
+		{"if (!true) { 10 } else { 20 } 30", 30},
+		{"if (1) { 10 } else { 20 } 10", 10},
+		{"if (1 < 2) { 10 } else { 20 }", 10},
+		{"if (1 > 2) { 10 } else { 20 }", 20},
+		{"if (false) { 10; }", object.NativeFalse},
+	}
+
+	runVmTests(t, testCases)
+}
+
 func runCompilerTests(t *testing.T, testCases []compilerTestCase) {
 	t.Helper()
 
@@ -119,6 +135,7 @@ func runVmTests(t *testing.T, testCases []vmTestCase) {
 func runVmTest(t *testing.T, testCase vmTestCase, caseIndex int) {
 	t.Helper()
 	vm := runVm(t, caseIndex, testCase.input)
+
 	topElement := vm.TestOnlyLastPoppedStackElement()
 
 	testExpectedObject(t, caseIndex, testCase.expected, topElement)
@@ -137,6 +154,14 @@ func testExpectedObject(t *testing.T, caseIndex int, expected interface{}, actua
 		testIntegerObject(t, caseIndex, int64(expected), actual)
 	case bool:
 		testBooleanObject(t, caseIndex, expected, actual)
+	case *object.Null:
+		if actual != object.NativeNull {
+			t.Errorf("object is not NativeNull: expected [%T] actual [%+v]", expected, actual)
+		}
+	case *object.Boolean:
+		if actual != expected {
+			t.Errorf("object not match : expected [%T] actual [%+v]", expected, actual)
+		}
 	default:
 		t.Fatalf("test case [%d] wrong type [%s] for test", caseIndex, expected)
 	}

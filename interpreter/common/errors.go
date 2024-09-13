@@ -40,3 +40,7 @@ func NewErrEmptyStack(nodeName string) error {
 func NewErrTypeMismatch(expectType, actualType string) error {
 	return errTypeMismatch.format(expectType, actualType)
 }
+
+func NewErrOperandsCount(expectedCount, actualCount int) error {
+	return errOperandsCount.format(expectedCount, actualCount)
+}

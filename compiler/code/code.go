@@ -2,6 +2,7 @@ package code
 
 import (
 	"bytes"
+	"fmt"
 )
 
 const (
@@ -54,7 +55,7 @@ var definitions = map[Opcode]*Definition{
 	// tell the VM to only jump if the value on top of stack is not monkey truthy
 	// The operand of OpJumpNotTruthy and OpJump is 16-bit wide.
 	OpJumpNotTruthy: {"OpJumpNotTruthy", "", []int{2}},
-	OpJump:          {"OpJump", "!", []int{2}},
+	OpJump:          {"OpJump", "", []int{2}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction
@@ -96,6 +97,11 @@ func (instruction Instructions) String() (error, string) {
 
 func (instruction Instructions) Opcode(index int) Opcode {
 	return Opcode(instruction[index])
+}
+
+func (instruction Instructions) TestOnlyPrintln() {
+	_, s := instruction.String()
+	fmt.Println(s)
 }
 
 // Opcode opcode
