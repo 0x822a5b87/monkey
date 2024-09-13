@@ -247,6 +247,14 @@ mindmap
 
 ### Jumps
 
+```js
+if (0 > 1) {
+  2 + 3
+} else {
+  4 - 5
+}
+```
+
 ```mermaid
 ---
 title: overview
@@ -298,5 +306,71 @@ class jump_no_matter_what back
 
 class TO_0008 jump_to
 class TO_0011 jump_to
+```
+
+### global identifiers
+
+```js
+let x = 33;
+let y = 66;
+
+let z = x + y;
+```
+
+```mermaid
+---
+title: global identifier
+---
+block-beta
+columns 6
+
+OFFSET:1 Instruction:1 Operand:2 Descrpition:2
+0000:1 Op0["OpConstant"]:1 Operand0["0"]:2 Desc0["Load the '33' onto the stack"]:2
+0003:1 Op1["OpSetGlobal"]:1 Operand1["0"]:2 Desc1["Bind value on stack to 0"]:2
+0006:1 Op2["OpConstant"]:1 Operand2["1"]:2 Desc2["Load the '66' onto the stack"]:2
+0009:1 Op3["OpSetGlobal"]:1 Operand3["1"]:2 Desc3["Bind value on stack to 1"]:2
+
+0012:1 Op4["OpGetGlobal"]:1 Operand4["1"]:2 Desc4["Push the global bound to 1"]:2
+0015:1 Op5["OpGetGlobal"]:1 Operand5["0"]:2 Desc5["Push the global bound to 0"]:2
+0018:1 Op6["OpAdd"]:3 esc6["Add them together"]:2
+0019:1 Op7["OpSetGlobal"]:1 Operand7["2"]:2 Desc7["Bind value on stack to 1"]:2
+
+
+classDef front 1,fill:#696,stroke:#333;
+classDef back fill:#969,stroke:#333;
+classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef header fill: #696,color: #fff,font-weight: bold,padding: 10px;
+  
+class 0000 front
+class 0003 front
+class 0006 front
+class 0009 front
+class 0012 front
+class 0015 front
+class 0018 front
+class 0019 front
+
+class Op0 back
+class Op1 back
+class Op2 back
+class Op3 back
+class Op4 back
+class Op5 back
+class Op6 back
+class Op7 back
+
+class Operand0 op
+class Operand1 op
+class Operand2 op
+class Operand3 op
+class Operand4 op
+class Operand5 op
+class Operand6 op
+class Operand7 op
+
+class OFFSET header
+class Instruction header
+class Operand header
+class Descrpition header
 ```
 
