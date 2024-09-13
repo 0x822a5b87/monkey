@@ -44,3 +44,7 @@ func NewErrTypeMismatch(expectType, actualType string) error {
 func NewErrOperandsCount(expectedCount, actualCount int) error {
 	return errOperandsCount.format(expectedCount, actualCount)
 }
+
+func NewUnresolvedVariable(name string) error {
+	return errUnresolvedVariable.format(name)
+}

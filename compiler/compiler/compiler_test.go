@@ -276,6 +276,70 @@ if (true) {
 	}
 }
 
+func TestGlobalLetStatements(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input: `
+		let one = 1;
+		let two = 2;
+		`,
+			expectedConstants: []any{1, 2},
+			expectedInstructions: []code.Instructions{
+				// The compiler executes according to the following steps for compile `let one = 1;`:
+				// 1. compile the expression `1` and push result onto topmost constant pool;
+				// 2. retrieve the constant value from constant pool and push it onto the topmost stack - `OpConstant 0`
+				// 3. pop the topmost value off the stack and save it to the global store at the index encoded in the operand - `OpSetGlobal 0`
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSetGlobal, 1),
+			},
+		},
+		{
+			input: `
+let one = 1;
+one;
+`,
+			expectedConstants: []any{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+let one = 1;
+let two = one;
+two;
+`,
+			expectedConstants: []any{1},
+			expectedInstructions: []code.Instructions{
+				// let's think about this, why do these statements have three expressions
+				// yet construct only one pop instruction?
+				// this is because OpConstant produces a variable on the stack, but the OpSetGlobal pops it already
+				// therefore, there is no need to generate an additional explicit pop instruction.
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpSetGlobal, 1),
+				code.Make(code.OpGetGlobal, 1),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		testCaseInfo := &util.TestCaseInfo{
+			T:             t,
+			TestFnName:    "TestGlobalLetStatements",
+			TestCaseIndex: i,
+		}
+		runCompilerTest(testCaseInfo, &testCase)
+	}
+}
+
 func runCompilerTest(testCaseInfo *util.TestCaseInfo, testCase *compilerTestCase) {
 	testCaseInfo.T.Helper()
 	c := NewCompiler()
@@ -324,6 +388,7 @@ func testInstructions(info *util.TestCaseInfo, expectedInstructions []code.Instr
 }
 
 func testConstants(info *util.TestCaseInfo, expectedConstants []interface{}, constants *code.Constants) {
+	info.Helper()
 	if len(expectedConstants) != constants.Len() {
 		info.T.Fatalf("wrong number of constants. expect=%d,actual=%d", len(expectedConstants), constants.Len())
 	}

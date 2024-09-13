@@ -7,8 +7,9 @@ import (
 
 const (
 	// OpConstant it has one operand: the number we previously assigned to the constant.
-	// When the VM executes OpConstant it retrieves the constant using the operand as an index and pushes
-	// it on to the stack.
+	// 1. read the operand;
+	// 2. retrieve constant value from constant pool through using operand as an index;
+	// 3. push constant value onto the stack.
 	OpConstant Opcode = iota
 	OpAdd
 	OpPop
@@ -25,6 +26,11 @@ const (
 	OpBang
 	OpJumpNotTruthy
 	OpJump
+	// OpSetGlobal read in the operand, pop the topmost value off the stack and save it to the globals store
+	// at the index encoded in the operand.
+	OpSetGlobal
+	// OpGetGlobal use the operand to retrieve the value from the globals store and push it onto the stack.
+	OpGetGlobal
 )
 
 var definitions = map[Opcode]*Definition{
@@ -56,6 +62,8 @@ var definitions = map[Opcode]*Definition{
 	// The operand of OpJumpNotTruthy and OpJump is 16-bit wide.
 	OpJumpNotTruthy: {"OpJumpNotTruthy", "", []int{2}},
 	OpJump:          {"OpJump", "", []int{2}},
+	OpSetGlobal:     {"OpSetGlobal", "", []int{2}},
+	OpGetGlobal:     {"OpGetGlobal", "", []int{2}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

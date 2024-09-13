@@ -18,12 +18,14 @@ func (i instructionIndex) add(delta int) int {
 type Compiler struct {
 	instructions code.Instructions
 	constants    *code.Constants
+	symbolTable  *SymbolTable
 }
 
 func NewCompiler() *Compiler {
 	c := &Compiler{
 		instructions: make(code.Instructions, 0),
 		constants:    code.NewConstants(),
+		symbolTable:  NewSymbolTable(),
 	}
 
 	return c
@@ -77,6 +79,8 @@ func (c *Compiler) compileStatement(statement ast.Statement) error {
 		// TODO support more statement type
 	case *ast.BlockStatement:
 		return c.compileBlockStatement(stmt)
+	case *ast.LetStatement:
+		return c.compileLetStatement(stmt)
 	}
 
 	return common.NewErrUnsupportedCompilingNode(statement.String())
@@ -109,6 +113,18 @@ func (c *Compiler) compileBlockStatement(statement *ast.BlockStatement) error {
 	return nil
 }
 
+func (c *Compiler) compileLetStatement(statement *ast.LetStatement) error {
+	err := c.Compile(statement.Value)
+	if err != nil {
+		return err
+	}
+
+	symbol := c.symbolTable.Define(statement.Name.Value)
+	c.emit(code.OpSetGlobal, symbol.Index)
+
+	return nil
+}
+
 func (c *Compiler) compileExpression(expr ast.Expression) error {
 	switch expr := expr.(type) {
 	case *ast.IntegerLiteral:
@@ -122,6 +138,8 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compilePrefixExpression(expr)
 	case *ast.IfExpression:
 		return c.compileIfExpression(expr)
+	case *ast.Identifier:
+		return c.compileIdentifier(expr)
 	}
 	return common.NewErrUnsupportedCompilingNode(expr.String())
 }
@@ -192,6 +210,15 @@ func (c *Compiler) compileIfExpression(ifExpr *ast.IfExpression) error {
 		c.replaceOperand(jumpNotTruthyIndex, jumpIndex.add(-1))
 	}
 
+	return nil
+}
+
+func (c *Compiler) compileIdentifier(identifier *ast.Identifier) error {
+	symbol, ok := c.symbolTable.Resolve(identifier.Value)
+	if !ok {
+		return common.NewUnresolvedVariable(identifier.Value)
+	}
+	c.emit(code.OpGetGlobal, symbol.Index)
 	return nil
 }
 
