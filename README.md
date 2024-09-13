@@ -215,11 +215,11 @@ mindmap
     		Program["**Program**
     			Program is the **root** of our program."]
     		Statement["**Statement**
-    		combine **Node**, has a statementNode() method to speicify a Node is a Statement"]
+    		combine **Node**, has a statementNode() method to specify a Node is a Statement"]
     			LetStatement
     			ReturnStatement
     		Expression["**Expression**
-    		combine **Node**, has a expressionNode() method to speicify a Node is a Expression"]
+    		combine **Node**, has a expressionNode() method to specify a Node is a Expression"]
     			Identifier
     			ExpressionStatement
     lexer
@@ -234,8 +234,8 @@ mindmap
     	Pratt Parser
     		prefix operator
     		infix operator
-    		sufix operator
-    evaluater
+    		suffix operator
+    evaluator
     	Eval
     	Environment
     Object
@@ -374,4 +374,4 @@ class Operand header
 class Description header
 ```
 
-The compiler is responsible for mapping identifiers to indices on the stack. And in the VM we'll use a slice to implementthe creation and retrieval of global bindings.We'll call this slice our "global store" and we'll use the operands of the `OpSetGlobal` and `OpGetGlobal` instructions as indexes into it.
+The compiler is responsible for mapping identifiers to indices on the stack. And in the VM we'll use a slice to implement the creation and retrieval of global bindings.We'll call this slice our "global store" and we'll use the operands of the `OpSetGlobal` and `OpGetGlobal` instructions as indexes into it.
