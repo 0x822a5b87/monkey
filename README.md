@@ -1,8 +1,12 @@
 # monkey
 
-> **writing an interpreter/compiler in Go**
->
-> In this repository, I am going to build my own lexer, my own parser, my own tree representation and my own evaluator.
+## acknowledge
+
+This is an experimental project under the guidance of [Writing An Interpreter In Go](https://interpreterbook.com/) and [Writing A Compiler In Go](https://compilerbook.com/).
+
+In this repository, I am going to build my own `lexer`,  `parser`, `AST` , `evaluator`, `compiler`, `Intermediate Representation`, `Virtual Machine` .
+
+Pay my utmost tribute to the author [Thorsten Ball](https://thorstenball.com/), an extraordinarily excellent project you have created!
 
 ## install
 
@@ -87,6 +91,8 @@ the interpreter will have a few major parts:
 - the Abstract Syntax Tree(AST)
 - the internal object system
 - the evaluator
+- the compiler
+- the virtual machine
 
 ## structure
 
