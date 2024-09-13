@@ -19,6 +19,9 @@ const PROMPT = ">> "
 const Interpreter = "i"
 const Compiler = "c"
 
+var c *compiler.Compiler
+var v *vm.Vm
+
 func Start(typed string, in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment(nil)
@@ -47,14 +50,14 @@ func Start(typed string, in io.Reader, out io.Writer) {
 }
 
 func compile(out io.Writer, stmt ast.Statement) {
-	c := compiler.NewCompiler()
+	newCompiler()
 	err := c.Compile(stmt)
 	if err != nil {
 		silentWrite(out, err.Error())
 		silentWrite(out, "\n")
 		return
 	}
-	v := vm.NewVm(c.ByteCode())
+	newVm(c.ByteCode())
 	err = v.Run()
 	if err != nil {
 		silentWrite(out, err.Error())
@@ -66,6 +69,22 @@ func compile(out io.Writer, stmt ast.Statement) {
 
 	silentWrite(out, stackTop.Inspect())
 	silentWrite(out, "\n")
+}
+
+func newCompiler() {
+	if c == nil {
+		c = compiler.NewCompiler()
+	} else {
+		c = compiler.NewCompilerWithState(c)
+	}
+}
+
+func newVm(code *compiler.ByteCode) {
+	if v == nil {
+		v = vm.NewVm(code)
+	} else {
+		v = vm.NewVmWithState(code, v)
+	}
 }
 
 func interpret(out io.Writer, stmt ast.Statement, env *object.Environment) {

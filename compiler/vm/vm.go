@@ -11,11 +11,13 @@ import (
 )
 
 const StackSize = 2048
+const GlobalStoreSize = 65535
 
 type Vm struct {
 	constants    *code.Constants
 	instructions code.Instructions
 	stack        []object.Object
+	globalStore  []object.Object
 
 	// sp means stack pointer, we'll increment or decrement to grow or shrink the stack, instead of modifying the stack slice itself.
 	// for the convention, it will always point to the next free slot in the stack
@@ -31,10 +33,17 @@ func NewVm(code *compiler.ByteCode) *Vm {
 		constants:    code.Constants,
 		instructions: code.Instructions,
 
-		stack: make([]object.Object, StackSize),
-		sp:    0,
-		ip:    0,
+		stack:       make([]object.Object, StackSize),
+		globalStore: make([]object.Object, GlobalStoreSize),
+		sp:          0,
+		ip:          0,
 	}
+}
+
+func NewVmWithState(code *compiler.ByteCode, prev *Vm) *Vm {
+	v := NewVm(code)
+	v.globalStore = prev.globalStore
+	return v
 }
 
 // Run what turns the Vm into a real virtual machine
@@ -62,6 +71,10 @@ func (v *Vm) Run() error {
 			err = v.executeNotTruthyJump(op)
 		case code.OpJump:
 			err = v.executeJump(op)
+		case code.OpSetGlobal:
+			err = v.executeSetGlobal(op)
+		case code.OpGetGlobal:
+			err = v.executeGetGlobal(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -260,6 +273,24 @@ func (v *Vm) executeNotTruthyJump(op code.Opcode) error {
 func (v *Vm) executeJump(op code.Opcode) error {
 	definition, _ := code.Lookup(op)
 	return v.doJump(definition)
+}
+
+func (v *Vm) executeSetGlobal(op code.Opcode) error {
+	globalIndex := v.readUint16()
+	v.incrementIp(2)
+	v.globalStore[globalIndex] = v.pop()
+	return nil
+}
+
+func (v *Vm) executeGetGlobal(op code.Opcode) error {
+	globalIndex := v.readUint16()
+	v.incrementIp(2)
+	value := v.globalStore[globalIndex]
+	return v.push(value)
+}
+
+func (v *Vm) readUint16() code.Index {
+	return code.ReadUint16(v.instructions[v.ip+1:])
 }
 
 func (v *Vm) doJump(definition *code.Definition) error {

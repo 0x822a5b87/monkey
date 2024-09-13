@@ -31,6 +31,13 @@ func NewCompiler() *Compiler {
 	return c
 }
 
+func NewCompilerWithState(prev *Compiler) *Compiler {
+	c := NewCompiler()
+	c.symbolTable = prev.symbolTable
+	c.constants = prev.constants
+	return c
+}
+
 // Compile
 // Assume that we are going to build a minimal compiler for adding 1 + 2
 // 1. traverse the AST we pass in, find the *ast.IntegerLiteral nodes.
