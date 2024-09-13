@@ -266,7 +266,7 @@ columns 4
 0001:1 OpConstant1:3
 0002:1 OpGreaterThan:3
 
-0003:1 jump_if_not_true["JUMP_IF_NOT_TRUE"]:2 TO_0008["0008"] 
+0003:1 jump_if_not_true["JUMP_IF_NOT_TRUE"]:2 TO_0008["0008"]
 
 
 0004:1 OpConstant2:3
@@ -287,7 +287,7 @@ jump_no_matter_what --> 0011
 classDef front 1,fill:#696,stroke:#333;
 classDef back fill:#969,stroke:#333;
 classDef jump_to fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
-  
+
 class 0000 front
 class 0001 front
 class 0002 front
@@ -324,7 +324,7 @@ title: global identifier
 block-beta
 columns 6
 
-OFFSET:1 Instruction:1 Operand:2 Descrpition:2
+OFFSET:1 Instruction:1 Operand:2 Description:2
 0000:1 Op0["OpConstant"]:1 Operand0["0"]:2 Desc0["Load the '33' onto the stack"]:2
 0003:1 Op1["OpSetGlobal"]:1 Operand1["0"]:2 Desc1["Bind value on stack to 0"]:2
 0006:1 Op2["OpConstant"]:1 Operand2["1"]:2 Desc2["Load the '66' onto the stack"]:2
@@ -340,7 +340,7 @@ classDef front 1,fill:#696,stroke:#333;
 classDef back fill:#969,stroke:#333;
 classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
 classDef header fill: #696,color: #fff,font-weight: bold,padding: 10px;
-  
+
 class 0000 front
 class 0003 front
 class 0006 front
@@ -371,6 +371,7 @@ class Operand7 op
 class OFFSET header
 class Instruction header
 class Operand header
-class Descrpition header
+class Description header
 ```
 
+The compiler is responsible for mapping identifiers to indices on the stack. And in the VM we'll use a slice to implementthe creation and retrieval of global bindings.We'll call this slice our "global store" and we'll use the operands of the `OpSetGlobal` and `OpGetGlobal` instructions as indexes into it.
