@@ -7,42 +7,9 @@ import (
 	"0x822a5b87/monkey/interpreter/lexer"
 	"0x822a5b87/monkey/interpreter/object"
 	"0x822a5b87/monkey/interpreter/parser"
+	"reflect"
 	"testing"
 )
-
-func TestCompilerIntegerArithmetic(t *testing.T) {
-	testCases := []compilerTestCase{
-		{
-			input: "1 + 2",
-			expectedConstants: []any{
-				1,
-				2,
-			},
-			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpConstant, 2),
-				code.Make(code.OpAdd),
-				code.Make(code.OpPop),
-			},
-		},
-
-		{
-			input: "100; 200;",
-			expectedConstants: []any{
-				100,
-				200,
-			},
-			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpPop),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpPop),
-			},
-		},
-	}
-
-	runCompilerTests(t, testCases)
-}
 
 func TestIntegerArithmetic(t *testing.T) {
 	testCases := []vmTestCase{
@@ -127,13 +94,14 @@ func TestGlobalLetStatement(t *testing.T) {
 	runVmTests(t, testCases)
 }
 
-func runCompilerTests(t *testing.T, testCases []compilerTestCase) {
-	t.Helper()
-
-	for i, testCase := range testCases {
-		vm := runVm(t, i, testCase.input)
-		testVm(t, i, vm, testCase.expectedConstants, testCase.expectedInstructions)
+func TestStringExpressions(t *testing.T) {
+	testCases := []vmTestCase{
+		{`"monkey"`, "monkey"},
+		{`"mon" + "key"`, "monkey"},
+		{`"mon" + "key" + " banana"`, "monkey banana"},
 	}
+
+	runVmTests(t, testCases)
 }
 
 func runVmTests(t *testing.T, testCases []vmTestCase) {
@@ -174,6 +142,8 @@ func testExpectedObject(t *testing.T, caseIndex int, expected interface{}, actua
 		if actual != expected {
 			t.Errorf("object not match : expected [%T] actual [%+v]", expected, actual)
 		}
+	case string:
+		testStringObject(t, caseIndex, actual, expected)
 	default:
 		t.Fatalf("test case [%d] wrong type [%s] for test", caseIndex, expected)
 	}
@@ -200,6 +170,24 @@ func testBooleanObject(t *testing.T, caseIndex int, expected bool, actual object
 
 	if expected != b.Value {
 		t.Fatalf("test case [%d] object has wrong value. expected = [%t], got = [%t]", caseIndex, expected, b.Value)
+	}
+}
+
+func testStringObject(t *testing.T, caseIndex int, obj object.Object, expected string) {
+	if obj == nil {
+		t.Fatalf("case %d exepct string but got nil", caseIndex)
+	}
+
+	if obj.Type() != object.ObjString {
+		t.Fatalf("case %d expect ObjString, got [%s], msg [%s]", caseIndex, string(obj.Type()), obj.Inspect())
+	}
+
+	stringObj, ok := obj.(*object.StringObj)
+	if !ok {
+		t.Fatalf("case %d expecte String, got [%s]", caseIndex, reflect.TypeOf(obj))
+	}
+	if stringObj.Value != expected {
+		t.Fatalf("case %d expect [%s], got [%s]", caseIndex, expected, stringObj.Value)
 	}
 }
 
@@ -243,10 +231,4 @@ func testVm(t *testing.T, caseIndex int, vm *Vm, expectedConstants []any, expect
 type vmTestCase struct {
 	input    string
 	expected interface{}
-}
-
-type compilerTestCase struct {
-	input                string
-	expectedConstants    []any
-	expectedInstructions []code.Instructions
 }

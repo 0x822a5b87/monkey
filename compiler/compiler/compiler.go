@@ -147,6 +147,8 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compileIfExpression(expr)
 	case *ast.Identifier:
 		return c.compileIdentifier(expr)
+	case *ast.StringLiteral:
+		return c.compileStringLiteral(expr)
 	}
 	return common.NewErrUnsupportedCompilingNode(expr.String())
 }
@@ -226,6 +228,13 @@ func (c *Compiler) compileIdentifier(identifier *ast.Identifier) error {
 		return common.NewUnresolvedVariable(identifier.Value)
 	}
 	c.emit(code.OpGetGlobal, symbol.Index)
+	return nil
+}
+
+func (c *Compiler) compileStringLiteral(stringLiteral *ast.StringLiteral) error {
+	stringObj := &object.StringObj{Value: stringLiteral.Literal}
+	constantIndex := c.constants.AddConstant(stringObj)
+	c.emit(code.OpConstant, constantIndex.IntValue())
 	return nil
 }
 

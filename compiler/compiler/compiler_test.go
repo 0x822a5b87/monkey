@@ -80,6 +80,42 @@ func TestIntegerCompiler(t *testing.T) {
 	}
 }
 
+func TestCompilerIntegerArithmetic(t *testing.T) {
+	testCases := []*compilerTestCase{
+		{
+			input: "1 + 2",
+			expectedConstants: []any{
+				1,
+				2,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
+				code.Make(code.OpPop),
+			},
+		},
+
+		{
+			input: "100; 200;",
+			expectedConstants: []any{
+				100,
+				200,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		runCompilerTest(t, i, testCase)
+	}
+}
+
 func TestBooleanExpressions(t *testing.T) {
 	testCases := []compilerTestCase{
 		{
@@ -326,11 +362,11 @@ func TestStringExpression(t *testing.T) {
 		},
 		{
 			input:             `"mon" + "key"`,
-			expectedConstants: []any{"monkey"},
+			expectedConstants: []any{"mon", "key"},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
-				code.Make(code.OpPop),
 				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
 				code.Make(code.OpPop),
 			},
 		},
