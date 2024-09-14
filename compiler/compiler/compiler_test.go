@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"0x822a5b87/monkey/compiler/code"
-	"0x822a5b87/monkey/compiler/util"
 	"0x822a5b87/monkey/interpreter/ast"
 	"0x822a5b87/monkey/interpreter/lexer"
 	"0x822a5b87/monkey/interpreter/object"
@@ -77,12 +76,7 @@ func TestIntegerCompiler(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		testCaseInfo := &util.TestCaseInfo{
-			T:             t,
-			TestFnName:    "TestIntegerCompiler",
-			TestCaseIndex: i,
-		}
-		runCompilerTest(testCaseInfo, &testCase)
+		runCompilerTest(t, i, &testCase)
 	}
 }
 
@@ -191,12 +185,7 @@ func TestBooleanExpressions(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		testCaseInfo := &util.TestCaseInfo{
-			T:             t,
-			TestFnName:    "TestBooleanExpressions",
-			TestCaseIndex: i,
-		}
-		runCompilerTest(testCaseInfo, &testCase)
+		runCompilerTest(t, i, &testCase)
 	}
 }
 
@@ -224,12 +213,7 @@ if (true) {
 	}
 
 	for i, testCase := range testCases {
-		testCaseInfo := &util.TestCaseInfo{
-			T:             t,
-			TestFnName:    "TestCondition",
-			TestCaseIndex: i,
-		}
-		runCompilerTest(testCaseInfo, &testCase)
+		runCompilerTest(t, i, &testCase)
 	}
 }
 
@@ -267,12 +251,7 @@ if (true) {
 	}
 
 	for i, testCase := range testCases {
-		testCaseInfo := &util.TestCaseInfo{
-			T:             t,
-			TestFnName:    "TestExpressionStatement",
-			TestCaseIndex: i,
-		}
-		runCompilerTest(testCaseInfo, &testCase)
+		runCompilerTest(t, i, &testCase)
 	}
 }
 
@@ -331,39 +310,60 @@ two;
 	}
 
 	for i, testCase := range testCases {
-		testCaseInfo := &util.TestCaseInfo{
-			T:             t,
-			TestFnName:    "TestGlobalLetStatements",
-			TestCaseIndex: i,
-		}
-		runCompilerTest(testCaseInfo, &testCase)
+		runCompilerTest(t, i, &testCase)
 	}
 }
 
-func runCompilerTest(testCaseInfo *util.TestCaseInfo, testCase *compilerTestCase) {
-	testCaseInfo.T.Helper()
+func TestStringExpression(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input:             `"monkey"`,
+			expectedConstants: []any{"monkey"},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             `"mon" + "key"`,
+			expectedConstants: []any{"monkey"},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		runCompilerTest(t, i, &testCase)
+	}
+}
+
+func runCompilerTest(t *testing.T, caseIndex int, testCase *compilerTestCase) {
+	t.Helper()
 	c := NewCompiler()
 	program := testParseProgram(testCase.input)
 	err := c.Compile(program)
 	if err != nil {
-		testCaseInfo.Fatalf("error [%s] compile program for input : %s", err.Error(), testCase.input)
+		t.Fatalf("case [%d] error [%s] compile program for input : %s", caseIndex, err.Error(), testCase.input)
 	}
 	byteCode := c.ByteCode()
 
-	testInstructions(testCaseInfo, testCase.expectedInstructions, byteCode.Instructions)
-	testConstants(testCaseInfo, testCase.expectedConstants, byteCode.Constants)
+	testInstructions(t, caseIndex, testCase.expectedInstructions, byteCode.Instructions)
+	testConstants(t, caseIndex, testCase.expectedConstants, byteCode.Constants)
 }
 
-func testInstructions(info *util.TestCaseInfo, expectedInstructions []code.Instructions, actualInstruction code.Instructions) {
-	info.Helper()
-	info.T.Helper()
+func testInstructions(t *testing.T, caseIndex int, expectedInstructions []code.Instructions, actualInstruction code.Instructions) {
+	t.Helper()
 	var expectedLen = 0
 	for _, instruction := range expectedInstructions {
 		expectedLen += instruction.Len()
 	}
 
 	if expectedLen != len(actualInstruction) {
-		info.T.Fatalf("wrong instructions length.\nexpect=%d\nactual=%d", expectedLen, len(actualInstruction))
+		t.Fatalf("case index [%d] wrong instructions length.\nexpect=%d\nactual=%d", caseIndex, expectedLen, len(actualInstruction))
 	}
 
 	var byteOffset = 0
@@ -375,27 +375,29 @@ func testInstructions(info *util.TestCaseInfo, expectedInstructions []code.Instr
 			if current[j] != ins {
 				err, curStr := code.BytesToInstruction(current).String()
 				if err != nil {
-					info.T.Fatalf("error lookup op : %s", err.Error())
+					t.Fatalf("case %d error lookup op : %s", caseIndex, err.Error())
 				}
 				err, expectedStr := expected.String()
 				if err != nil {
-					info.T.Fatalf("error lookup op : %s", err.Error())
+					t.Fatalf("case %d error lookup op : %s", caseIndex, err.Error())
 				}
-				info.T.Errorf("instructionOffset = [%d] not match\nexpect=%s\nactual=%s", i, expectedStr, curStr)
+				t.Errorf("case %d instructionOffset = [%d] not match\nexpect=%s\nactual=%s", caseIndex, i, expectedStr, curStr)
 			}
 		}
 	}
 }
 
-func testConstants(info *util.TestCaseInfo, expectedConstants []interface{}, constants *code.Constants) {
-	info.Helper()
+func testConstants(t *testing.T, caseIndex int, expectedConstants []interface{}, constants *code.Constants) {
+	t.Helper()
 	if len(expectedConstants) != constants.Len() {
-		info.T.Fatalf("wrong number of constants. expect=%d,actual=%d", len(expectedConstants), constants.Len())
+		t.Fatalf("case %d wrong number of constants. expect=%d,actual=%d", caseIndex, len(expectedConstants), constants.Len())
 	}
 	for i, constant := range expectedConstants {
 		switch expected := constant.(type) {
 		case int:
-			testIntegerObject(info, constants.GetConstant(code.Index(i)), int64(expected))
+			testIntegerObject(t, caseIndex, constants.GetConstant(code.Index(i)), int64(expected))
+		case string:
+			testStringObject(t, caseIndex, constants.GetConstant(code.Index(i)), expected)
 		}
 	}
 }
@@ -414,20 +416,38 @@ func testParseProgram(input string) *ast.Program {
 	return p.ParseProgram()
 }
 
-func testIntegerObject(info *util.TestCaseInfo, obj object.Object, expected int64) {
+func testIntegerObject(t *testing.T, caseIndex int, obj object.Object, expected int64) {
 	if obj == nil {
-		info.Fatalf("exepct not nil, got nil")
+		t.Fatalf("case %d exepct int but got nil", caseIndex)
 	}
 
 	if obj.Type() != object.ObjInteger {
-		info.Fatalf("expect ObjInteger, got [%s], msg [%s]", string(obj.Type()), obj.Inspect())
+		t.Fatalf("case %d expect ObjInteger, got [%s], msg [%s]", caseIndex, string(obj.Type()), obj.Inspect())
 	}
 	integerObj, ok := obj.(*object.Integer)
 	if !ok {
-		info.Fatalf("expecte Integer, got [%s]", reflect.TypeOf(obj))
+		t.Fatalf("case %d expecte Integer, got [%s]", caseIndex, reflect.TypeOf(obj))
 	}
 	if integerObj.Value != expected {
-		info.Fatalf("expect [%d], got [%d]", expected, integerObj.Value)
+		t.Fatalf("case %d expect [%d], got [%d]", caseIndex, expected, integerObj.Value)
+	}
+}
+
+func testStringObject(t *testing.T, caseIndex int, obj object.Object, expected string) {
+	if obj == nil {
+		t.Fatalf("case %d exepct string but got nil", caseIndex)
+	}
+
+	if obj.Type() != object.ObjString {
+		t.Fatalf("case %d expect ObjString, got [%s], msg [%s]", caseIndex, string(obj.Type()), obj.Inspect())
+	}
+
+	stringObj, ok := obj.(*object.StringObj)
+	if !ok {
+		t.Fatalf("case %d expecte String, got [%s]", caseIndex, reflect.TypeOf(obj))
+	}
+	if stringObj.Value != expected {
+		t.Fatalf("case %d expect [%s], got [%s]", caseIndex, expected, stringObj.Value)
 	}
 }
 

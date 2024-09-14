@@ -1,7 +1,6 @@
 package code
 
 import (
-	"0x822a5b87/monkey/compiler/util"
 	"testing"
 )
 
@@ -50,18 +49,13 @@ func TestInstructionsString(t *testing.T) {
 		concat = concat.Append(ins)
 	}
 
-	info := &util.TestCaseInfo{
-		T:             t,
-		TestFnName:    "TestInstructionsString",
-		TestCaseIndex: 0,
-	}
 	err, s := concat.String()
 	if err != nil {
-		info.Fatalf(err.Error())
+		t.Fatalf(err.Error())
 	}
 
 	if s != expected {
-		info.Fatalf("instructions wrongly formatted.\nexpect=[%q]\nactual=[%q]", expected, s)
+		t.Fatalf("instructions wrongly formatted.\nexpect=[%q]\nactual=[%q]", expected, s)
 	}
 }
 
@@ -74,27 +68,22 @@ func TestReadOperands(t *testing.T) {
 		{OpConstant, []int{65535}, 2},
 	}
 
-	for i, tt := range testCases {
-		info := &util.TestCaseInfo{
-			T:             t,
-			TestFnName:    "TestReadOperands",
-			TestCaseIndex: i,
-		}
+	for _, tt := range testCases {
 
 		instruction := Make(tt.op, tt.operands...)
 		def, err := Lookup(tt.op)
 		if err != nil {
-			info.Fatalf(err.Error())
+			t.Fatalf(err.Error())
 		}
 
 		operand, n := ReadOperands(def, instruction[1:])
 		if n != tt.bytesRead {
-			info.Fatalf("n wrong. expected=%d,got=%d", tt.bytesRead, n)
+			t.Fatalf("n wrong. expected=%d,got=%d", tt.bytesRead, n)
 		}
 
 		for j, expected := range tt.operands {
 			if operand[j] != expected {
-				info.Fatalf("operand wrong. expected=%d, got=%d", expected, operand[j])
+				t.Fatalf("operand wrong. expected=%d, got=%d", expected, operand[j])
 			}
 		}
 	}
