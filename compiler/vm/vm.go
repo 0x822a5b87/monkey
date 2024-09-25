@@ -75,6 +75,10 @@ func (v *Vm) Run() error {
 			err = v.executeSetGlobal(op)
 		case code.OpGetGlobal:
 			err = v.executeGetGlobal(op)
+		case code.OpArray:
+			err = v.executeOpArray(op)
+		case code.OpHash:
+			err = v.executeHash(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -276,21 +280,49 @@ func (v *Vm) executeJump(op code.Opcode) error {
 }
 
 func (v *Vm) executeSetGlobal(op code.Opcode) error {
-	globalIndex := v.readUint16()
-	v.incrementIp(2)
+	globalIndex := v.readUint16AndIncIp()
 	v.globalStore[globalIndex] = v.pop()
 	return nil
 }
 
 func (v *Vm) executeGetGlobal(op code.Opcode) error {
-	globalIndex := v.readUint16()
-	v.incrementIp(2)
+	globalIndex := v.readUint16AndIncIp()
 	value := v.globalStore[globalIndex]
 	return v.push(value)
 }
 
+func (v *Vm) executeOpArray(op code.Opcode) error {
+	n := v.readUint16AndIncIp()
+	array := &object.Array{Elements: make([]object.Object, n.IntValue())}
+	for i := n.IntValue() - 1; i >= 0; i-- {
+		array.Elements[i] = v.pop()
+	}
+	return v.push(array)
+}
+
+func (v *Vm) executeHash(op code.Opcode) error {
+	doubleN := v.readUint16AndIncIp()
+	hash := &object.Hash{Pairs: make(map[object.HashKey]*object.HashPair)}
+	for i := 0; i < doubleN.IntValue(); i += 2 {
+		value := v.pop()
+		key := v.pop()
+		hashable := key.(object.Hashable)
+		hash.Pairs[hashable.HashKey()] = &object.HashPair{
+			Key:   key,
+			Value: value,
+		}
+	}
+	return v.push(hash)
+}
+
 func (v *Vm) readUint16() code.Index {
 	return code.ReadUint16(v.instructions[v.ip+1:])
+}
+
+func (v *Vm) readUint16AndIncIp() code.Index {
+	val := v.readUint16()
+	v.incrementIp(2)
+	return val
 }
 
 func (v *Vm) doJump(definition *code.Definition) error {

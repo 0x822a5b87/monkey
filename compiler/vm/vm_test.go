@@ -104,6 +104,78 @@ func TestStringExpressions(t *testing.T) {
 	runVmTests(t, testCases)
 }
 
+func TestArrayLiterals(t *testing.T) {
+	testCases := []vmTestCase{
+		{`[]`, []int{}},
+		{`[1, 2, 3]`, []int{1, 2, 3}},
+		{`[1 + 2, 3 - 4, 5 * 6, 8 / 2]`, []int{3, -1, 30, 4}},
+	}
+
+	runVmTests(t, testCases)
+}
+
+func TestHashLiterals(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `{}`,
+			expected: &object.Hash{
+				Pairs: map[object.HashKey]*object.HashPair{},
+			},
+		},
+		{
+			input: `{1:2, 2:3}`,
+			expected: &object.Hash{
+				Pairs: map[object.HashKey]*object.HashPair{
+					(&object.Integer{Value: 1}).HashKey(): {
+						Key:   &object.Integer{Value: 1},
+						Value: &object.Integer{Value: 2},
+					},
+					(&object.Integer{Value: 2}).HashKey(): {
+						Key:   &object.Integer{Value: 2},
+						Value: &object.Integer{Value: 3},
+					},
+				},
+			},
+		},
+		{
+			input: `{1+1:2+2, 3+3:4*4}`,
+			expected: &object.Hash{
+				Pairs: map[object.HashKey]*object.HashPair{
+					(&object.Integer{Value: 2}).HashKey(): {
+						Key:   &object.Integer{Value: 2},
+						Value: &object.Integer{Value: 4},
+					},
+					(&object.Integer{Value: 6}).HashKey(): {
+						Key:   &object.Integer{Value: 6},
+						Value: &object.Integer{Value: 16},
+					},
+				},
+			},
+		},
+		{
+			input: `{1+1:2+2, 3+3:4*4, 100 * 100: 200 - 500}`,
+			expected: &object.Hash{
+				Pairs: map[object.HashKey]*object.HashPair{
+					(&object.Integer{Value: 2}).HashKey(): {
+						Key:   &object.Integer{Value: 2},
+						Value: &object.Integer{Value: 4},
+					},
+					(&object.Integer{Value: 6}).HashKey(): {
+						Key:   &object.Integer{Value: 6},
+						Value: &object.Integer{Value: 16},
+					},
+					(&object.Integer{Value: 10000}).HashKey(): {
+						Key:   &object.Integer{Value: 10000},
+						Value: &object.Integer{Value: -300},
+					},
+				},
+			},
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
 func runVmTests(t *testing.T, testCases []vmTestCase) {
 	t.Helper()
 
@@ -144,8 +216,53 @@ func testExpectedObject(t *testing.T, caseIndex int, expected interface{}, actua
 		}
 	case string:
 		testStringObject(t, caseIndex, actual, expected)
+	case []int:
+		testArrayObject(t, caseIndex, expected, actual)
+	case *object.Hash:
+		testHashObject(t, caseIndex, expected, actual)
+	case *object.Integer:
+		testIntegerObject(t, caseIndex, expected.Value, actual)
 	default:
-		t.Fatalf("test case [%d] wrong type [%s] for test", caseIndex, expected)
+		t.Fatalf("test case [%d] wrong type for test, expected [%+v] actual [%s]", caseIndex, expected, actual.Type())
+	}
+}
+
+func testArrayObject(t *testing.T, caseIndex int, expected any, actual object.Object) {
+	v := reflect.ValueOf(expected)
+	actualArray, ok := actual.(*object.Array)
+	if !ok {
+		t.Errorf("object not match : expected [%T] actual [%+v]", expected, actual)
+	}
+	if len(actualArray.Elements) != v.Len() {
+		t.Fatalf("test case [%d] length not match, expected = [%d], actual = [%d]", caseIndex, v.Len(), len(actualArray.Elements))
+	}
+	for i, element := range actualArray.Elements {
+		testExpectedObject(t, caseIndex, v.Index(i).Interface(), element)
+	}
+}
+
+func testHashObject(t *testing.T, caseIndex int, expected any, actual object.Object) {
+	t.Helper()
+
+	actualArray, ok := actual.(*object.Hash)
+	if !ok {
+		t.Errorf("object not match : expected [%T] actual [%+v]", expected, actual)
+	}
+
+	expectedHash, ok := expected.(*object.Hash)
+	if !ok {
+		t.Errorf("object not match : expected [%T] actual [%+v]", expected, actual)
+	}
+	if len(actualArray.Pairs) != len(expectedHash.Pairs) {
+		t.Fatalf("test case [%d] length not match, expected = [%d], actual = [%d]", caseIndex, len(expectedHash.Pairs), len(actualArray.Pairs))
+	}
+
+	for k, element := range actualArray.Pairs {
+		pair, ok := expectedHash.Pairs[k]
+		if !ok {
+			t.Fatalf("test case [%d] does't contains key = [%s]", caseIndex, k.Type)
+		}
+		testExpectedObject(t, caseIndex, pair.Value, element.Value)
 	}
 }
 

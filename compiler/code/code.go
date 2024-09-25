@@ -31,6 +31,27 @@ const (
 	OpSetGlobal
 	// OpGetGlobal use the operand to retrieve the value from the globals store and push it onto the stack.
 	OpGetGlobal
+	// OpArray operate array with one operand:
+	// Compile:
+	// 1. compile all of its elements;
+	// 2. compiling them results in instructions that leave N values on the VM's stack, where N is the number of element in the array literal;
+	// 3. we're going to emit an OpArray instruction with the operand being N, the number of elements.
+	// Run:
+	// when the VM then executes the OpArray instruction it takes the N elements off the stack, builds an *object.Array out of them,
+	// and pushes that on to the stack.
+	OpArray
+	// OpHash process object.Hash
+	// Just like an array, its final value can't be determined during compile time.
+	// Doubly so, actually because instead of having N elements, a hash in Monkey has N key and N value and all of them are created by expressions.
+	// The operand specifies the number of keys and values sitting on the stack.
+	// Compile :
+	// 1. compile all of its keys and its values;
+	// 2. compiling them results in instructions that leave 2 * N values on the VM's stack, where N is the number of keys in hash literals;
+	// 3. emit an OpHash [2 * N] instruction.
+	// Run :
+	// 1. Read operand value;
+	// 2. pop keys and values from stack and build an object.Hash and push that on to the stack.
+	OpHash
 )
 
 var definitions = map[Opcode]*Definition{
@@ -64,6 +85,8 @@ var definitions = map[Opcode]*Definition{
 	OpJump:          {"OpJump", "", []int{2}},
 	OpSetGlobal:     {"OpSetGlobal", "", []int{2}},
 	OpGetGlobal:     {"OpGetGlobal", "", []int{2}},
+	OpArray:         {"OpArray", "", []int{2}},
+	OpHash:          {"OpHash", "", []int{2}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

@@ -149,6 +149,10 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compileIdentifier(expr)
 	case *ast.StringLiteral:
 		return c.compileStringLiteral(expr)
+	case *ast.ArrayLiteral:
+		return c.compileArrayLiteral(expr)
+	case *ast.HashExpression:
+		return c.compileHashExpression(expr)
 	}
 	return common.NewErrUnsupportedCompilingNode(expr.String())
 }
@@ -235,6 +239,33 @@ func (c *Compiler) compileStringLiteral(stringLiteral *ast.StringLiteral) error 
 	stringObj := &object.StringObj{Value: stringLiteral.Literal}
 	constantIndex := c.constants.AddConstant(stringObj)
 	c.emit(code.OpConstant, constantIndex.IntValue())
+	return nil
+}
+
+func (c *Compiler) compileArrayLiteral(arrayLiteral *ast.ArrayLiteral) error {
+	for _, element := range arrayLiteral.Elements {
+		err := c.Compile(element)
+		if err != nil {
+			return err
+		}
+	}
+	c.emit(code.OpArray, len(arrayLiteral.Elements))
+	return nil
+}
+
+func (c *Compiler) compileHashExpression(hashExpression *ast.HashExpression) error {
+	// TODO The example code indicates that the pairs should be sorted, but the specific reason for doing so has not been explained thus far
+	for k, v := range hashExpression.Pairs {
+		err := c.Compile(k)
+		if err != nil {
+			return err
+		}
+		err = c.Compile(v)
+		if err != nil {
+			return err
+		}
+	}
+	c.emit(code.OpHash, len(hashExpression.Pairs)*2)
 	return nil
 }
 
