@@ -176,6 +176,28 @@ func TestHashLiterals(t *testing.T) {
 	runVmTests(t, testCases)
 }
 
+func TestIndexExpressions(t *testing.T) {
+	testCases := []vmTestCase{
+		{`[1][0]`, &object.Integer{Value: 1}},
+		{`[1, 2, 3][1]`, &object.Integer{Value: 2}},
+		{`[1, 2, 3][0 + 2]`, &object.Integer{Value: 3}},
+		{`[[1, 2, 3],[4,5,6]][0][0]`, &object.Integer{Value: 1}},
+		{`[[1, 2, 3], [4, 5,6]][0][1]`, &object.Integer{Value: 2}},
+		{`[[1, 2, 3], [4, 5,6]][0][2]`, &object.Integer{Value: 3}},
+		{`[[1, 2, 3], [4, 5,6]][1][0]`, &object.Integer{Value: 4}},
+		{`[[1, 2, 3], [4, 5,6]][1][1]`, &object.Integer{Value: 5}},
+		{`[[1, 2, 3], [4, 5,6]][1][2]`, &object.Integer{Value: 6}},
+		// TODO It should throw an exception when the index is greater than the length.
+		{`[][0]`, &object.Null{}},
+		{`[][1]`, &object.Null{}},
+		{`{1:2, 3:4}[1]`, &object.Integer{Value: 2}},
+		{`{1:2, 3:4}[3]`, &object.Integer{Value: 4}},
+		{`{}[3]`, &object.Null{}},
+	}
+
+	runVmTests(t, testCases)
+}
+
 func runVmTests(t *testing.T, testCases []vmTestCase) {
 	t.Helper()
 
@@ -228,11 +250,15 @@ func testExpectedObject(t *testing.T, caseIndex int, expected interface{}, actua
 }
 
 func testArrayObject(t *testing.T, caseIndex int, expected any, actual object.Object) {
+	t.Helper()
+
 	v := reflect.ValueOf(expected)
 	actualArray, ok := actual.(*object.Array)
 	if !ok {
 		t.Errorf("object not match : expected [%T] actual [%+v]", expected, actual)
+		return
 	}
+
 	if len(actualArray.Elements) != v.Len() {
 		t.Fatalf("test case [%d] length not match, expected = [%d], actual = [%d]", caseIndex, v.Len(), len(actualArray.Elements))
 	}

@@ -79,6 +79,8 @@ func (v *Vm) Run() error {
 			err = v.executeOpArray(op)
 		case code.OpHash:
 			err = v.executeHash(op)
+		case code.OpIndex:
+			err = v.executeIndex(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -313,6 +315,18 @@ func (v *Vm) executeHash(op code.Opcode) error {
 		}
 	}
 	return v.push(hash)
+}
+
+func (v *Vm) executeIndex(op code.Opcode) error {
+	index := v.pop()
+	obj := v.pop()
+
+	indexed, ok := obj.(object.Index)
+	if !ok {
+		return common.NewErrIndex(indexed.Type())
+	}
+
+	return v.push(indexed.Index(index))
 }
 
 func (v *Vm) readUint16() code.Index {

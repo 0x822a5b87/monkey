@@ -1,6 +1,7 @@
 package common
 
 import (
+	"0x822a5b87/monkey/interpreter/object"
 	"fmt"
 )
 
@@ -46,5 +47,9 @@ func NewErrOperandsCount(expectedCount, actualCount int) error {
 }
 
 func NewUnresolvedVariable(name string) error {
+	return errUnresolvedVariable.format(name)
+}
+
+func NewErrIndex(name object.ObjType) error {
 	return errUnresolvedVariable.format(name)
 }

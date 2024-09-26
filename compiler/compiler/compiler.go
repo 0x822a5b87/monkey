@@ -153,6 +153,8 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compileArrayLiteral(expr)
 	case *ast.HashExpression:
 		return c.compileHashExpression(expr)
+	case *ast.IndexExpression:
+		return c.compileIndexExpression(expr)
 	}
 	return common.NewErrUnsupportedCompilingNode(expr.String())
 }
@@ -266,6 +268,19 @@ func (c *Compiler) compileHashExpression(hashExpression *ast.HashExpression) err
 		}
 	}
 	c.emit(code.OpHash, len(hashExpression.Pairs)*2)
+	return nil
+}
+
+func (c *Compiler) compileIndexExpression(indexExpr *ast.IndexExpression) error {
+	err := c.Compile(indexExpr.Lhs)
+	if err != nil {
+		return err
+	}
+	err = c.Compile(indexExpr.Index)
+	if err != nil {
+		return err
+	}
+	c.emit(code.OpIndex)
 	return nil
 }
 

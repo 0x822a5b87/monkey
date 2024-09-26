@@ -52,6 +52,12 @@ const (
 	// 1. Read operand value;
 	// 2. pop keys and values from stack and build an object.Hash and push that on to the stack.
 	OpHash
+	// OpIndex Instead of treating the index operator in combination with a specific data structure as a special case,
+	// we'll build a generic index operator into the compiler and VM. So it's worked equally well with both array indices and hash indices.
+	// for OpIndex to work, there need to be two values sitting on the top of the stack:
+	// the object to be indexed and the object serving as the index.
+	// When the VM executes OpIndex it should take both off the stack, perform the index operation, and put the result back on.
+	OpIndex
 )
 
 var definitions = map[Opcode]*Definition{
@@ -87,6 +93,7 @@ var definitions = map[Opcode]*Definition{
 	OpGetGlobal:     {"OpGetGlobal", "", []int{2}},
 	OpArray:         {"OpArray", "", []int{2}},
 	OpHash:          {"OpHash", "", []int{2}},
+	OpIndex:         {"OpIndex", "", []int{0}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

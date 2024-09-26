@@ -441,6 +441,47 @@ func TestHashLiterals(t *testing.T) {
 		runCompilerTest(t, i, &testCase)
 	}
 }
+
+func TestIndexExpressions(t *testing.T) {
+	testCases := []compilerTestCase{
+		// test array index
+		{
+			input:             `[1, 2, 3][1 + 1]`,
+			expectedConstants: []any{1, 2, 3, 1, 1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpArray, 3),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpAdd),
+				code.Make(code.OpIndex),
+				code.Make(code.OpPop),
+			},
+		},
+		// test hash index
+		{
+			input:             `{1 : 2}[2 -1]`,
+			expectedConstants: []any{1, 2, 2, 1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpHash, 2),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpSub),
+				code.Make(code.OpIndex),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		runCompilerTest(t, i, &testCase)
+	}
+}
+
 func TestStringExpression(t *testing.T) {
 	testCases := []compilerTestCase{
 		{
