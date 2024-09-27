@@ -7,6 +7,7 @@ import (
 	"0x822a5b87/monkey/interpreter/object"
 	"0x822a5b87/monkey/interpreter/token"
 	"fmt"
+	"sort"
 )
 
 type instructionIndex int
@@ -272,13 +273,21 @@ func (c *Compiler) compileArrayLiteral(arrayLiteral *ast.ArrayLiteral) error {
 }
 
 func (c *Compiler) compileHashExpression(hashExpression *ast.HashExpression) error {
-	// TODO The example code indicates that the pairs should be sorted, but the specific reason for doing so has not been explained thus far
-	for k, v := range hashExpression.Pairs {
-		err := c.Compile(k)
+	// sort Paris for test
+	pairs := make([]ExpressionPair, 0, len(hashExpression.Pairs))
+	for key, value := range hashExpression.Pairs {
+		pairs = append(pairs, ExpressionPair{key, value})
+	}
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].Key.String() < pairs[j].Key.String()
+	})
+
+	for _, pair := range pairs {
+		err := c.Compile(pair.Key)
 		if err != nil {
 			return err
 		}
-		err = c.Compile(v)
+		err = c.Compile(pair.Value)
 		if err != nil {
 			return err
 		}
