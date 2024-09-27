@@ -482,6 +482,118 @@ func TestIndexExpressions(t *testing.T) {
 	}
 }
 
+func TestFunctions(t *testing.T) {
+	testCases := []compilerTestCase{
+		// TODO cancel the comment
+		{
+			input: `fn() { return 5 + 10; }`,
+			expectedConstants: []any{
+				5,
+				10,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `fn() {}`,
+			expectedConstants: []any{
+				[]code.Instructions{
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `fn() {"hello world"}`,
+			expectedConstants: []any{
+				"hello world",
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `fn() { return fn() { "hello world" }; }`,
+			expectedConstants: []any{
+				"hello world",
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpReturnValue),
+				},
+				[]code.Instructions{
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		runCompilerTest(t, i, &testCase)
+	}
+}
+
+func TestCompilerScopes(t *testing.T) {
+
+	compiler := NewCompiler()
+	if compiler.scopeIndex != 0 {
+		t.Errorf("scopeIndex wrong. got=%d, want=%d", compiler.scopeIndex, 0)
+	}
+
+	globalSymbolTable := compiler.symbolTable
+	compiler.emit(code.OpMul)
+	compiler.enterScope()
+	if compiler.scopeIndex != 1 {
+		t.Errorf("scopeIndex wrong. got=%d, want=%d", compiler.scopeIndex, 1)
+	}
+
+	compiler.emit(code.OpSub)
+	if len(compiler.scopes[compiler.scopeIndex].instructions) != 1 {
+		t.Errorf("instructions length wrong. got=%d", len(compiler.scopes[compiler.scopeIndex].instructions))
+	}
+
+	//last := compiler.scopes[compiler.scopeIndex].lastInstruction
+	//if last.Opcode != code.OpSub {
+	//	t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d", last.Opcode, code.OpSub)
+	//}
+	//if compiler.symbolTable.Outer != globalSymbolTable {
+	//	t.Errorf("compiler did not enclose symbolTable")
+	//}
+
+	compiler.exitScope()
+	if compiler.scopeIndex != 0 {
+		t.Errorf("scopeIndex wrong. got=%d, want=%d", compiler.scopeIndex, 0)
+	}
+	if compiler.symbolTable != globalSymbolTable {
+		t.Errorf("compiler did not restore global symbol table")
+	}
+
+	compiler.emit(code.OpAdd)
+	if len(compiler.scopes[compiler.scopeIndex].instructions) != 2 {
+		t.Errorf("instructions length wrong. got=%d", len(compiler.scopes[compiler.scopeIndex].instructions))
+	}
+}
+
 func TestStringExpression(t *testing.T) {
 	testCases := []compilerTestCase{
 		{
@@ -555,6 +667,16 @@ func testInstructions(t *testing.T, caseIndex int, expectedInstructions []code.I
 	}
 }
 
+func testCompiledFunction(t *testing.T, caseIndex int, expected []code.Instructions, actual object.Object) {
+	t.Helper()
+	compiledFn, ok := actual.(*code.CompiledFunction)
+	if !ok {
+		t.Errorf("case %d type error\nexpect=%s\nactual=%s", caseIndex, code.ObjCompiledFunction, actual.Type())
+		return
+	}
+	testInstructions(t, caseIndex, expected, compiledFn.Instructions)
+}
+
 func testConstants(t *testing.T, caseIndex int, expectedConstants []interface{}, constants *code.Constants) {
 	t.Helper()
 	if len(expectedConstants) != constants.Len() {
@@ -566,6 +688,8 @@ func testConstants(t *testing.T, caseIndex int, expectedConstants []interface{},
 			testIntegerObject(t, caseIndex, constants.GetConstant(code.Index(i)), int64(expected))
 		case string:
 			testStringObject(t, caseIndex, constants.GetConstant(code.Index(i)), expected)
+		case []code.Instructions:
+			testCompiledFunction(t, caseIndex, expected, constants.GetConstant(code.Index(i)))
 		}
 	}
 }
@@ -585,10 +709,10 @@ func testParseProgram(input string) *ast.Program {
 }
 
 func testIntegerObject(t *testing.T, caseIndex int, obj object.Object, expected int64) {
+	t.Helper()
 	if obj == nil {
 		t.Fatalf("case %d exepct int but got nil", caseIndex)
 	}
-
 	if obj.Type() != object.ObjInteger {
 		t.Fatalf("case %d expect ObjInteger, got [%s], msg [%s]", caseIndex, string(obj.Type()), obj.Inspect())
 	}

@@ -58,6 +58,17 @@ const (
 	// the object to be indexed and the object serving as the index.
 	// When the VM executes OpIndex it should take both off the stack, perform the index operation, and put the result back on.
 	OpIndex
+	// OpCall calling convention, see https://en.wikipedia.org/wiki/Calling_convention
+	// With OpCall defined, we are now able to get a function on to the stack of our VM and call it.
+	// What we still need is a way to tell the VM to return from a called function.
+	// More specifically, we need to differentiate between two cases where the Vm has to return from a function.
+	// 1. the execution of a function actually returning something;
+	// 2. the execution of a function ends without anything being returned;
+	OpCall
+	// OpReturnValue It doesn't have any arguments. The value to be returned has to sit on top of the stack.
+	OpReturnValue
+	// OpReturn representing a function that neither explicitly nor implicitly returns a value
+	OpReturn
 )
 
 var definitions = map[Opcode]*Definition{
@@ -93,7 +104,10 @@ var definitions = map[Opcode]*Definition{
 	OpGetGlobal:     {"OpGetGlobal", "", []int{2}},
 	OpArray:         {"OpArray", "", []int{2}},
 	OpHash:          {"OpHash", "", []int{2}},
-	OpIndex:         {"OpIndex", "", []int{0}},
+	OpIndex:         {"OpIndex", "", []int{}},
+	OpCall:          {"OpCall", "", []int{}},
+	OpReturnValue:   {"OpReturnValue", "", []int{}},
+	OpReturn:        {"OpReturn", "", []int{}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

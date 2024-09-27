@@ -16,16 +16,29 @@ func (i instructionIndex) add(delta int) int {
 }
 
 type Compiler struct {
-	instructions code.Instructions
-	constants    *code.Constants
-	symbolTable  *SymbolTable
+	constants   *code.Constants
+	symbolTable *SymbolTable
+
+	scopes     []*CompilationScope
+	scopeIndex int
+}
+
+// ByteCode is what we'll pass to the VM and make assertions about in our compiler tests.
+type ByteCode struct {
+	Instructions code.Instructions
+	Constants    *code.Constants
 }
 
 func NewCompiler() *Compiler {
-	c := &Compiler{
+	mainScope := &CompilationScope{
 		instructions: make(code.Instructions, 0),
-		constants:    code.NewConstants(),
-		symbolTable:  NewSymbolTable(),
+	}
+
+	c := &Compiler{
+		constants:   code.NewConstants(),
+		symbolTable: NewSymbolTable(),
+		scopes:      []*CompilationScope{mainScope},
+		scopeIndex:  0,
 	}
 
 	return c
@@ -58,15 +71,9 @@ func (c *Compiler) Compile(root ast.Node) error {
 // ByteCode transform a compiled AST into bytecode
 func (c *Compiler) ByteCode() *ByteCode {
 	return &ByteCode{
-		Instructions: c.instructions,
+		Instructions: c.currentInstructions(),
 		Constants:    c.constants,
 	}
-}
-
-// ByteCode is what we'll pass to the VM and make assertions about in our compiler tests.
-type ByteCode struct {
-	Instructions code.Instructions
-	Constants    *code.Constants
 }
 
 func (c *Compiler) compileProgram(program *ast.Program) error {
@@ -88,6 +95,8 @@ func (c *Compiler) compileStatement(statement ast.Statement) error {
 		return c.compileBlockStatement(stmt)
 	case *ast.LetStatement:
 		return c.compileLetStatement(stmt)
+	case *ast.ReturnStatement:
+		return c.compileReturnStatement(stmt)
 	}
 
 	return common.NewErrUnsupportedCompilingNode(statement.String())
@@ -132,6 +141,11 @@ func (c *Compiler) compileLetStatement(statement *ast.LetStatement) error {
 	return nil
 }
 
+// we don't emit code.OpReturn or code.OpReturnValue, leave this responsibility to the function
+func (c *Compiler) compileReturnStatement(statement *ast.ReturnStatement) error {
+	return c.Compile(statement.ReturnValue)
+}
+
 func (c *Compiler) compileExpression(expr ast.Expression) error {
 	switch expr := expr.(type) {
 	case *ast.IntegerLiteral:
@@ -155,6 +169,8 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compileHashExpression(expr)
 	case *ast.IndexExpression:
 		return c.compileIndexExpression(expr)
+	case *ast.FnLiteral:
+		return c.compileFnLiteral(expr)
 	}
 	return common.NewErrUnsupportedCompilingNode(expr.String())
 }
@@ -216,12 +232,12 @@ func (c *Compiler) compileIfExpression(ifExpr *ast.IfExpression) error {
 		}
 
 		// jump to length - 1, as the for loop will increment 1 automatically
-		c.replaceOperand(jumpIndex, c.instructions.Len()-1)
+		c.replaceOperand(jumpIndex, c.currentInstructions().Len()-1)
 
 		// jump to the end byte of NOT_MATTER_WHAT_JUMP
 		c.replaceOperand(jumpNotTruthyIndex, jumpIndex.add(2))
 	} else {
-		var jumpIndex = instructionIndex(len(c.instructions))
+		var jumpIndex = instructionIndex(len(c.currentInstructions()))
 		c.replaceOperand(jumpNotTruthyIndex, jumpIndex.add(-1))
 	}
 
@@ -284,6 +300,21 @@ func (c *Compiler) compileIndexExpression(indexExpr *ast.IndexExpression) error 
 	return nil
 }
 
+func (c *Compiler) compileFnLiteral(literal *ast.FnLiteral) error {
+	c.enterScope()
+	err := c.Compile(literal.Body)
+	if err != nil {
+		return err
+	}
+
+	c.completeOpReturn(literal)
+
+	fnInstructions := c.exitScope()
+	fnCompiled := &code.CompiledFunction{Instructions: fnInstructions}
+	c.emit(code.OpConstant, c.constants.AddConstant(fnCompiled).IntValue())
+	return nil
+}
+
 func (c *Compiler) compileInfixOperator(operator string) error {
 	switch operator {
 	case string(token.PLUS):
@@ -332,24 +363,88 @@ func (c *Compiler) compilePrefixOperator(operator string) error {
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) instructionIndex {
 	instruction := code.Make(op, operands...)
-	var index = instructionIndex(len(c.instructions))
-	c.instructions = append(c.instructions, instruction...)
+	pos := c.addInstruction(instruction)
+	c.setLastEmitInstruction(op, pos)
+	return pos
+}
+
+func (c *Compiler) addInstruction(ins []byte) instructionIndex {
+	var index = instructionIndex(len(c.currentInstructions()))
+	c.updateCurrentInstructions(ins)
 	return index
 }
 
+func (c *Compiler) setLastEmitInstruction(op code.Opcode, pos instructionIndex) {
+	scope := c.currentScope()
+	scope.previous = scope.last
+	scope.last = NewEmittedInstruction(op, pos)
+}
+
+func (c *Compiler) isLastInstructionPop() bool {
+	return c.currentScope().last != nil && c.currentScope().last.Opcode == code.OpPop
+}
+
+func (c *Compiler) updateLastPopInstruction(op code.Opcode, operands ...int) {
+	last := c.currentScope().last
+	newInstruction := code.Make(op, operands...)
+	c.replaceInstruction(last.Position, newInstruction)
+	c.setLastEmitInstruction(op, last.Position)
+}
+
+func (c *Compiler) currentScope() *CompilationScope {
+	return c.scopes[c.scopeIndex]
+}
+
 func (c *Compiler) replaceOperand(instructionBeginIndex instructionIndex, operands ...int) {
-	op := c.instructions[instructionBeginIndex]
+	op := c.currentInstructions()[instructionBeginIndex]
 	instruction := code.Make(code.Opcode(op), operands...)
 	c.replaceInstruction(instructionBeginIndex, instruction)
 }
 
 func (c *Compiler) replaceInstruction(instructionBeginIndex instructionIndex, another code.Instructions) {
 	for i := 0; i < another.Len(); i++ {
-		c.instructions[instructionBeginIndex.add(i)] = another[i]
+		c.currentInstructions()[instructionBeginIndex.add(i)] = another[i]
 	}
 }
 
 func (c *Compiler) compileOperatorPlus() error {
 	c.emit(code.OpAdd)
 	return nil
+}
+
+func (c *Compiler) currentInstructions() code.Instructions {
+	return c.currentScope().instructions
+}
+
+func (c *Compiler) updateCurrentInstructions(instruction code.Instructions) {
+	instructions := c.currentInstructions()
+	instructions = append(instructions, instruction...)
+	c.currentScope().instructions = instructions
+}
+
+func (c *Compiler) enterScope() {
+	scope := NewCompilationScope()
+
+	c.scopes = append(c.scopes, scope)
+	c.scopeIndex++
+}
+
+func (c *Compiler) exitScope() code.Instructions {
+	instructions := c.currentInstructions()
+	c.scopes = c.scopes[:c.scopeIndex]
+	c.scopeIndex--
+	return instructions
+}
+
+func (c *Compiler) completeOpReturn(literal *ast.FnLiteral) {
+	if len(literal.Body.Statements) == 0 {
+		c.emit(code.OpReturn)
+		return
+	}
+
+	if c.isLastInstructionPop() {
+		c.updateLastPopInstruction(code.OpReturnValue)
+	} else {
+		c.emit(code.OpReturnValue)
+	}
 }

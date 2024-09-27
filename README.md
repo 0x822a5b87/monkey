@@ -381,3 +381,85 @@ class Description header
 ```
 
 The compiler is responsible for mapping identifiers to indices on the stack. And in the VM we'll use a slice to implement the creation and retrieval of global bindings.We'll call this slice our "global store" and we'll use the operands of the `OpSetGlobal` and `OpGetGlobal` instructions as indexes into it.
+
+### functions
+
+consider the follwing code snippet: A function without arguments, an integer arithmetic expression in the body, and a *explicit return statement*.
+
+```js
+fn() {
+  return 5 + 10;
+}
+```
+
+```mermaid
+---
+title: functions with explicit return statement
+---
+block-beta
+columns 6
+
+OFFSET:1 Instruction:1 Operand:2 Description:2
+0000:1 Op0["OpConstant"]:1 Operand0["0"]:2 Desc0["Load 5 on stack"]:2
+0003:1 Op1["OpConstant"]:1 Operand1["1"]:2 Desc1["Load 10 on stack"]:2
+0006:1 Op2["OpAdd"]:3 Desc2["Add them together"]:2
+0007:1 Op3["OpReturnValue"]:3 Desc3["return value on stack"]:2
+
+classDef front 1,fill:#696,stroke:#333;
+classDef back fill:#969,stroke:#333;
+classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef header fill: #696,color: #fff,font-weight: bold,padding: 10px;
+
+class 0000 front
+class 0003 front
+class 0006 front
+class 0007 front
+
+class Op0 back
+class Op1 back
+class Op2 back
+class Op3 back
+
+class Operand0 op
+class Operand1 op
+class Operand2 op
+class Operand3 op
+
+class OFFSET header
+class Instruction header
+class Operand header
+class Description header
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
