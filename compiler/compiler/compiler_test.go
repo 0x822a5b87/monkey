@@ -484,7 +484,6 @@ func TestIndexExpressions(t *testing.T) {
 
 func TestFunctions(t *testing.T) {
 	testCases := []compilerTestCase{
-		// TODO cancel the comment
 		{
 			input: `fn() { return 5 + 10; }`,
 			expectedConstants: []any{
@@ -537,6 +536,23 @@ func TestFunctions(t *testing.T) {
 					code.Make(code.OpReturnValue),
 				},
 				[]code.Instructions{
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `fn() { 1; 2 }`,
+			expectedConstants: []any{
+				1,
+				2,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpPop),
 					code.Make(code.OpConstant, 1),
 					code.Make(code.OpReturnValue),
 				},
