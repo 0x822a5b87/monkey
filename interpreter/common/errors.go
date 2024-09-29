@@ -53,3 +53,11 @@ func NewUnresolvedVariable(name string) error {
 func NewErrIndex(name object.ObjType) error {
 	return errUnresolvedVariable.format(name)
 }
+
+func NewOpcodeUndefined(op byte) error {
+	return errOpCodeUndefined.format(op)
+}
+
+func NewOperandWidthError(operandsCount int) error {
+	return errOperandWidth.format(operandsCount)
+}

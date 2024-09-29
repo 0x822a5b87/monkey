@@ -10,6 +10,8 @@ var (
 	errOperandsCount             = errorPattern{100007, "operands count error : expected [%d], actual [%d]"}
 	errUnresolvedVariable        = errorPattern{100008, "unresolved variable : name = [%s]"}
 	errIndex                     = errorPattern{100009, "error index type = [%s]"}
+	errOpCodeUndefined           = errorPattern{100009, "opcode [%d] undefined"}
+	errOperandWidth              = errorPattern{100007, "operands width error [%d]"}
 )
 
 type errorPattern struct {

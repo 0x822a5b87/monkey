@@ -19,6 +19,7 @@ type Symbol struct {
 
 // SymbolTable associates strings with Symbol in its store and keeps track of the numDefinitions it has.
 type SymbolTable struct {
+	Outer *SymbolTable
 	store map[string]Symbol
 	// TODO figure out its usage
 	// num of this symbol table have been defined which used to prevent it being release by GC at an inappropriate time
@@ -26,10 +27,15 @@ type SymbolTable struct {
 }
 
 func (st *SymbolTable) Define(name string) Symbol {
+	scope := GlobalScope
+	if st.Outer != nil {
+		scope = LocalScope
+	}
+
 	st.checkDefine()
 	s := Symbol{
 		Name:  name,
-		Scope: GlobalScope,
+		Scope: scope,
 		Index: st.numDefinitions,
 	}
 	st.store[name] = s
@@ -39,6 +45,9 @@ func (st *SymbolTable) Define(name string) Symbol {
 
 func (st *SymbolTable) Resolve(name string) (Symbol, bool) {
 	s, ok := st.store[name]
+	if !ok && st.Outer != nil {
+		return st.Outer.Resolve(name)
+	}
 	return s, ok
 }
 
@@ -48,5 +57,14 @@ func (st *SymbolTable) checkDefine() bool {
 }
 
 func NewSymbolTable() *SymbolTable {
-	return &SymbolTable{store: make(map[string]Symbol)}
+	return &SymbolTable{
+		store:          make(map[string]Symbol),
+		numDefinitions: 0,
+	}
+}
+
+func NewEnclosedSymbolTable(parent *SymbolTable) *SymbolTable {
+	enclosed := NewSymbolTable()
+	enclosed.Outer = parent
+	return enclosed
 }

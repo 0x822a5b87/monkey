@@ -69,6 +69,10 @@ const (
 	OpReturnValue
 	// OpReturn representing a function that neither explicitly nor implicitly returns a value
 	OpReturn
+	// OpSetLocal binding local variable with one-byte operand.
+	OpSetLocal
+	// OpGetLocal retrieve local variable with one-byte operand.
+	OpGetLocal
 )
 
 var definitions = map[Opcode]*Definition{
@@ -108,6 +112,8 @@ var definitions = map[Opcode]*Definition{
 	OpCall:          {"OpCall", "", []int{}},
 	OpReturnValue:   {"OpReturnValue", "", []int{}},
 	OpReturn:        {"OpReturn", "", []int{}},
+	OpSetLocal:      {"OpSetLocal", "", []int{1}},
+	OpGetLocal:      {"OpGetLocal", "", []int{1}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

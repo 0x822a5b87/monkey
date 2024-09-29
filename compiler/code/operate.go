@@ -1,14 +1,14 @@
 package code
 
 import (
+	"0x822a5b87/monkey/interpreter/common"
 	"encoding/binary"
-	"fmt"
 )
 
 func Lookup(opcode Opcode) (*Definition, error) {
 	def, ok := definitions[opcode]
 	if !ok {
-		return nil, fmt.Errorf("opcode %d undefined", opcode)
+		return nil, common.NewOpcodeUndefined(opcode.Byte())
 	}
 	return def, nil
 }
@@ -16,7 +16,7 @@ func Lookup(opcode Opcode) (*Definition, error) {
 func Make(op Opcode, operands ...int) Instructions {
 	definition, err := Lookup(op)
 	if err != nil {
-		panic(fmt.Errorf("no such operand : %d", op))
+		panic(err)
 	}
 	instruction := make([]byte, definition.TotalSize())
 	instruction[0] = op.Byte()
@@ -24,8 +24,12 @@ func Make(op Opcode, operands ...int) Instructions {
 	for i, operand := range operands {
 		width := definition.NthOperandWidth(i)
 		switch width {
+		case 1:
+			instruction[offset] = byte(operand)
 		case 2:
 			binary.BigEndian.PutUint16(instruction[offset:], uint16(operand))
+		default:
+			panic(common.NewOperandWidthError(width))
 		}
 		offset += width
 	}
@@ -55,8 +59,12 @@ func ReadOperands(def *Definition, instruction []byte) (operands []int, readByte
 		start = readBytes
 		readBytes += width
 		switch width {
+		case 1:
+			operands[start] = ReadUint8(instruction[start:]).IntValue()
 		case 2:
 			operands[i] = ReadUint16(instruction[start:readBytes]).IntValue()
+		default:
+			panic(common.NewOperandWidthError(width))
 		}
 	}
 	return
@@ -69,4 +77,9 @@ func BytesToInstruction(data []byte) Instructions {
 func ReadUint16(instructions Instructions) Index {
 	u := binary.BigEndian.Uint16(instructions)
 	return Index(u)
+}
+
+func ReadUint8(instructions Instructions) Index {
+	c := instructions[0]
+	return Index(c)
 }

@@ -91,7 +91,6 @@ func (c *Compiler) compileStatement(statement ast.Statement) error {
 	switch stmt := statement.(type) {
 	case *ast.ExpressionStatement:
 		return c.compileExpressionStatement(stmt)
-		// TODO support more statement type
 	case *ast.BlockStatement:
 		return c.compileBlockStatement(stmt)
 	case *ast.LetStatement:
@@ -137,7 +136,11 @@ func (c *Compiler) compileLetStatement(statement *ast.LetStatement) error {
 	}
 
 	symbol := c.symbolTable.Define(statement.Name.Value)
-	c.emit(code.OpSetGlobal, symbol.Index)
+	if c.isGlobalScope(symbol) {
+		c.emit(code.OpSetGlobal, symbol.Index)
+	} else {
+		c.emit(code.OpSetLocal, symbol.Index)
+	}
 
 	return nil
 }
@@ -158,7 +161,6 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compileIntegerLiteral(expr)
 	case *ast.BooleanExpression:
 		return c.compileBooleanExpression(expr)
-		// TODO support more expression type
 	case *ast.InfixExpression:
 		return c.compileInfixExpression(expr)
 	case *ast.PrefixExpression:
@@ -258,7 +260,11 @@ func (c *Compiler) compileIdentifier(identifier *ast.Identifier) error {
 	if !ok {
 		return common.NewUnresolvedVariable(identifier.Value)
 	}
-	c.emit(code.OpGetGlobal, symbol.Index)
+	if c.isGlobalScope(symbol) {
+		c.emit(code.OpGetGlobal, symbol.Index)
+	} else {
+		c.emit(code.OpGetLocal, symbol.Index)
+	}
 	return nil
 }
 
@@ -333,7 +339,6 @@ func (c *Compiler) compileFnLiteral(literal *ast.FnLiteral) error {
 }
 
 func (c *Compiler) compileCallExpression(call *ast.CallExpression) error {
-	// TODO compile arguments
 	err := c.Compile(call.Fn)
 	if err != nil {
 		return err
@@ -369,7 +374,6 @@ func (c *Compiler) compileInfixOperator(operator string) error {
 	case string(token.NotEq):
 		c.emit(code.OpNotEqual)
 		return nil
-		// TODO support more operator
 	}
 
 	return common.NewErrUnsupportedCompilingNode(fmt.Sprintf(" infix [%s]", operator))
@@ -383,7 +387,6 @@ func (c *Compiler) compilePrefixOperator(operator string) error {
 	case string(token.BANG):
 		c.emit(code.OpBang)
 		return nil
-		// TODO support more operator
 	}
 
 	return common.NewErrUnsupportedCompilingNode(fmt.Sprintf(" prefix [%s]", operator))
@@ -452,15 +455,16 @@ func (c *Compiler) updateCurrentInstructions(instruction code.Instructions) {
 
 func (c *Compiler) enterScope() {
 	scope := NewCompilationScope()
-
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
 }
 
 func (c *Compiler) exitScope() code.Instructions {
 	instructions := c.currentInstructions()
 	c.scopes = c.scopes[:c.scopeIndex]
 	c.scopeIndex--
+	c.symbolTable = c.symbolTable.Outer
 	return instructions
 }
 
@@ -480,4 +484,8 @@ func (c *Compiler) completeOpReturn(literal *ast.FnLiteral) {
 	}
 
 	c.emit(code.OpReturnValue)
+}
+
+func (c *Compiler) isGlobalScope(symbol Symbol) bool {
+	return symbol.Scope == GlobalScope
 }

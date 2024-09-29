@@ -31,7 +31,11 @@ the language is called `Monkey` and has the following features：
 - an array data structure
 - a hash data structure
 
-```javascript
+## usage
+
+### primary type, hash and array
+
+```js
 // here is how we bind values to names in Monkey
 let age = 1;
 let name = "Monkey";
@@ -46,7 +50,11 @@ let thorsten = {"name": "Thorsten", "age": 28};
 // accessing the elements in arrays and hashes is done with index expression
 let intValue = myArray[0];
 let name = thorsten["name"];
+```
 
+### function
+
+```js
 // the let statements can also be used to bind functions to names
 let add = fn(a, b) {
   return a + b;
@@ -56,7 +64,11 @@ let add = fn(a, b) {
 let add_ = fn(a, b) {
   a + b
 };
+```
 
+### recursive
+
+```js
 // a more complex function
 let fibonacci = fn(x) {
   if (x == 0) {
@@ -69,7 +81,23 @@ let fibonacci = fn(x) {
 };
 
 fibonacci(10);
+```
 
+### closure
+
+#### a simple closure with first-class function
+
+```js
+let returnsOne = fn() { 1; };
+let returnsOneReturner = fn() { returnsOne; };
+
+let closure = returnsOneReturner();
+closure()
+```
+
+#### a more complex closure
+
+```javascript
 // a special type of functions, called higher order functions
 let twice = fn(f, x) {
   return f(f(x));
@@ -80,6 +108,25 @@ let addTwo = fn(x) {
 };
 
 twice(addTwo, 2);
+```
+
+### local bindings
+
+```js
+let globalSeed = 50;
+
+let minusOne = fn() {
+  let num = 1;
+  globalSeed - num;
+};
+
+let minusTwo = fn() {
+  let num = 2;
+  globalSeed - num;
+};
+
+// 97
+minusOne() + minusTwo();
 ```
 
 ## module
