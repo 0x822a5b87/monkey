@@ -16,6 +16,10 @@ var (
 
 type ObjType string
 
+func (o ObjType) String() string {
+	return string(o)
+}
+
 // Object represent an object
 // looks a lot like we did in the token package with the Token and TokenType types.
 // Except that instead of being a structure like Token the Object type is an interface.

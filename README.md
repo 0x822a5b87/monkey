@@ -431,9 +431,50 @@ class Operand header
 class Description header
 ```
 
+### frames
 
+Consider this:
 
+```js
+// define
+let one = fn() { 5; };
+let two = fn() { one(); };
+let three = fn() { two(); };
 
+// call
+three();
+```
+
+As we know, function calls are nested and execution-relevant data(the instructions and the instruction pointer) is accessed in a last-in-first-out manner. The solution is to tie them together and call the resulting bundle a `frame` -- short for `call frame` or `stack frame`.
+
+On real mechines, a frame is not something separate from but a designated part of the stack.**It's where the return address, the arguments to the current function and its local variables are stored.**
+
+```go
+package vm
+
+import "0x822a5b87/monkey/compiler/code"
+
+// Frame short for call frame or stack frame
+// A Frame has two fields: ip and fn.
+// fn points to the compiled function referenced by the frame.
+// ip is the instruction pointer in this frame, for the function.
+type Frame struct {
+	fn *code.CompiledFunction
+	ip int
+}
+
+func NewFrame(f *code.CompiledFunction) *Frame {
+	return &Frame{
+		fn: f,
+		ip: -1,
+	}
+}
+
+func (f *Frame) Instructions() code.Instructions {
+	return f.fn.Instructions
+}
+
+```
 
 
 

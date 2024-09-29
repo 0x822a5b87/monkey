@@ -198,6 +198,106 @@ func TestIndexExpressions(t *testing.T) {
 	runVmTests(t, testCases)
 }
 
+func TestCallingFunctionsWithoutArgument(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+let fivePlusTen = fn() { 5 + 10; };
+fivePlusTen();
+`,
+			expected: &object.Integer{Value: 15},
+		},
+		{
+			input: `
+let one = fn() { 1; };
+let two = fn() { 2; };
+two();
+`,
+			expected: &object.Integer{Value: 2},
+		},
+		{
+			input: `
+let one = fn() { 1; };
+let two = fn() { 2; };
+two();
+one();
+`,
+			expected: &object.Integer{Value: 1},
+		},
+		{
+			input: `
+let one = fn() { 1; };
+let two = fn() { 2; };
+one() + two();
+`,
+			expected: &object.Integer{Value: 3},
+		},
+		{
+			input: `
+let a = fn() { 1; };
+let b = fn() { a() + 2; };
+let c = fn() { b() + 3; };
+c();
+`,
+			expected: &object.Integer{Value: 6},
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
+func TestFunctionsWithReturnStatement(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+let earlyExit = fn() { return 99; 100; };
+earlyExit();
+`,
+			expected: &object.Integer{Value: 99},
+		},
+		{
+			input: `
+let earlyExit = fn() { return 99; return 100; };
+earlyExit();
+`,
+			expected: &object.Integer{Value: 99},
+		},
+		{
+			input: `
+let earlyExit = fn() { 99; return 100; };
+earlyExit();
+`,
+			expected: &object.Integer{Value: 100},
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
+func TestFunctionWithoutReturnValue(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+let noReturn = fn() { };
+noReturn();
+`,
+			expected: object.NativeNull,
+		},
+		{
+			input: `
+let noReturn = fn() { };
+let noReturnTwo = fn() { noReturn(); };
+noReturnTwo();
+noReturn();
+noReturnTwo();
+`,
+			expected: object.NativeNull,
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
 func runVmTests(t *testing.T, testCases []vmTestCase) {
 	t.Helper()
 
@@ -365,9 +465,9 @@ func testVm(t *testing.T, caseIndex int, vm *Vm, expectedConstants []any, expect
 	for _, instruction := range expectedInstructions {
 		expectedInstructionLen += instruction.Len()
 	}
-	if vm.instructions.Len() != expectedInstructionLen {
+	if vm.currentInstructions().Len() != expectedInstructionLen {
 		t.Fatalf("test case [%d] instructions length not match, expected = [%d], actual = [%d]",
-			caseIndex, expectedInstructionLen, vm.instructions.Len())
+			caseIndex, expectedInstructionLen, vm.currentInstructions().Len())
 	}
 }
 

@@ -12,32 +12,39 @@ import (
 
 const StackSize = 2048
 const GlobalStoreSize = 65535
+const MaxFrameSize = 1024
 
 type Vm struct {
-	constants    *code.Constants
-	instructions code.Instructions
-	stack        []object.Object
-	globalStore  []object.Object
+	constants   *code.Constants
+	stack       []object.Object
+	globalStore []object.Object
 
 	// sp means stack pointer, we'll increment or decrement to grow or shrink the stack, instead of modifying the stack slice itself.
 	// for the convention, it will always point to the next free slot in the stack
 	// If there's one element on the stack, located at index 0, the value of stackPointer would be 1
 	sp int
-	// ip means instruction pointer, we iterate through instructions by incrementing it.
-	// Then fetch the current instruction by directly accessing instructions.
-	ip int
+
+	frames      []*Frame
+	framesIndex int
 }
 
-func NewVm(code *compiler.ByteCode) *Vm {
-	return &Vm{
-		constants:    code.Constants,
-		instructions: code.Instructions,
+func NewVm(c *compiler.ByteCode) *Vm {
+	main := &code.CompiledFunction{Instructions: c.Instructions}
+
+	v := &Vm{
+		constants: c.Constants,
 
 		stack:       make([]object.Object, StackSize),
 		globalStore: make([]object.Object, GlobalStoreSize),
 		sp:          0,
-		ip:          0,
+
+		frames:      make([]*Frame, MaxFrameSize),
+		framesIndex: 0,
 	}
+
+	v.pushFrame(NewFrame(main))
+
+	return v
 }
 
 func NewVmWithState(code *compiler.ByteCode, prev *Vm) *Vm {
@@ -54,7 +61,7 @@ func NewVmWithState(code *compiler.ByteCode, prev *Vm) *Vm {
 func (v *Vm) Run() error {
 	var err error
 	// In every loop, we reach the end of a single instruction and increment by 1 byte to move to the next instruction
-	for ; v.hasNext(); v.incrementIp(1) {
+	for v.hasNext() {
 		op := v.currentOpcode()
 		switch op {
 		case code.OpConstant:
@@ -81,6 +88,12 @@ func (v *Vm) Run() error {
 			err = v.executeHash(op)
 		case code.OpIndex:
 			err = v.executeIndex(op)
+		case code.OpCall:
+			err = v.executeCall(op)
+		case code.OpReturnValue:
+			err = v.executeReturnValue(op)
+		case code.OpReturn:
+			err = v.executeReturn(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -118,19 +131,20 @@ func (v *Vm) push(o object.Object) error {
 }
 
 func (v *Vm) hasNext() bool {
-	return v.ip < len(v.instructions)
+	return v.currentIp() < len(v.currentInstructions())
 }
 
 func (v *Vm) currentOpcode() code.Opcode {
-	return code.Opcode(v.instructions[v.ip])
+	instructions := v.currentInstructions()
+	return code.Opcode(instructions[v.currentIp()])
 }
 
 func (v *Vm) incrementIp(delta int) {
-	v.ip += delta
+	v.currentFrame().ip += delta
 }
 
 func (v *Vm) decrementIp(delta int) {
-	v.ip -= delta
+	v.currentFrame().ip -= delta
 }
 
 func (v *Vm) pop() object.Object {
@@ -142,15 +156,16 @@ func (v *Vm) pop() object.Object {
 }
 
 func (v *Vm) opConstant() error {
+	defer v.incrementIp(1)
 	// ATTENTION: let's recap what we did with the object.Integer in the compiler
 	// we construct an Integer object and added it to the constant pool.
 	// Then, we emitted an instruction with the index of the Integer object in the constant pool to bytecode
-	constantIndex := code.ReadUint16(v.instructions[v.ip+1:])
-	v.incrementIp(2)
+	constantIndex := v.readUint16AndIncIp()
 	return v.push(v.constants.GetConstant(constantIndex))
 }
 
 func (v *Vm) opBoolean(op code.Opcode) error {
+	defer v.incrementIp(1)
 	switch op {
 	case code.OpTrue:
 		return v.push(object.NativeTrue)
@@ -208,6 +223,7 @@ func (v *Vm) opLessThan(lhs, rhs object.Object) error {
 }
 
 func (v *Vm) executeBinaryOperation(op code.Opcode) error {
+	defer v.incrementIp(1)
 	rhs := v.pop()
 	lhs := v.pop()
 	definition, _ := code.Lookup(op)
@@ -243,6 +259,7 @@ func (v *Vm) executeBinaryOperation(op code.Opcode) error {
 }
 
 func (v *Vm) executePrefixOpcode(op code.Opcode) error {
+	defer v.incrementIp(1)
 	lhs := v.pop()
 	definition, _ := code.Lookup(op)
 	if lhs == nil {
@@ -260,6 +277,8 @@ func (v *Vm) executePrefixOpcode(op code.Opcode) error {
 }
 
 func (v *Vm) executeNotTruthyJump(op code.Opcode) error {
+	defer v.incrementIp(1)
+
 	definition, _ := code.Lookup(op)
 
 	lhs := v.pop()
@@ -277,23 +296,31 @@ func (v *Vm) executeNotTruthyJump(op code.Opcode) error {
 }
 
 func (v *Vm) executeJump(op code.Opcode) error {
+	defer v.incrementIp(1)
+
 	definition, _ := code.Lookup(op)
 	return v.doJump(definition)
 }
 
 func (v *Vm) executeSetGlobal(op code.Opcode) error {
+	defer v.incrementIp(1)
+
 	globalIndex := v.readUint16AndIncIp()
 	v.globalStore[globalIndex] = v.pop()
 	return nil
 }
 
 func (v *Vm) executeGetGlobal(op code.Opcode) error {
+	defer v.incrementIp(1)
+
 	globalIndex := v.readUint16AndIncIp()
 	value := v.globalStore[globalIndex]
 	return v.push(value)
 }
 
 func (v *Vm) executeOpArray(op code.Opcode) error {
+	defer v.incrementIp(1)
+
 	n := v.readUint16AndIncIp()
 	array := &object.Array{Elements: make([]object.Object, n.IntValue())}
 	for i := n.IntValue() - 1; i >= 0; i-- {
@@ -303,6 +330,8 @@ func (v *Vm) executeOpArray(op code.Opcode) error {
 }
 
 func (v *Vm) executeHash(op code.Opcode) error {
+	defer v.incrementIp(1)
+
 	doubleN := v.readUint16AndIncIp()
 	hash := &object.Hash{Pairs: make(map[object.HashKey]*object.HashPair)}
 	for i := 0; i < doubleN.IntValue(); i += 2 {
@@ -318,6 +347,8 @@ func (v *Vm) executeHash(op code.Opcode) error {
 }
 
 func (v *Vm) executeIndex(op code.Opcode) error {
+	defer v.incrementIp(1)
+
 	index := v.pop()
 	obj := v.pop()
 
@@ -329,8 +360,31 @@ func (v *Vm) executeIndex(op code.Opcode) error {
 	return v.push(indexed.Index(index))
 }
 
+func (v *Vm) executeCall(op code.Opcode) error {
+	obj := v.pop()
+	fn, ok := obj.(*code.CompiledFunction)
+	if !ok {
+		return common.NewErrTypeMismatch(object.ObjFunction.String(), obj.Type().String())
+	}
+	frame := NewFrame(fn)
+	v.pushFrame(frame)
+	return nil
+}
+
+func (v *Vm) executeReturnValue(op code.Opcode) error {
+	defer v.incrementIp(1)
+	v.popFrame()
+	return nil
+}
+
+func (v *Vm) executeReturn(op code.Opcode) error {
+	defer v.incrementIp(1)
+	v.popFrame()
+	return v.push(object.NativeNull)
+}
+
 func (v *Vm) readUint16() code.Index {
-	return code.ReadUint16(v.instructions[v.ip+1:])
+	return code.ReadUint16(v.currentInstructions()[v.currentIp()+1:])
 }
 
 func (v *Vm) readUint16AndIncIp() code.Index {
@@ -340,11 +394,11 @@ func (v *Vm) readUint16AndIncIp() code.Index {
 }
 
 func (v *Vm) doJump(definition *code.Definition) error {
-	operands, _ := code.ReadOperands(definition, v.instructions[v.ip+1:])
+	operands, _ := code.ReadOperands(definition, v.currentInstructions()[v.currentIp()+1:])
 	if len(operands) != 1 {
 		return common.NewErrOperandsCount(1, len(operands))
 	}
-	v.ip = operands[0]
+	v.currentFrame().ip = operands[0]
 	return nil
 }
 
@@ -358,6 +412,7 @@ func (v *Vm) isTruthy(obj object.Object) bool {
 }
 
 func (v *Vm) opPop() error {
+	defer v.incrementIp(1)
 	v.pop()
 	return nil
 }
@@ -380,4 +435,27 @@ func (v *Vm) opMinus(lhs object.Object) error {
 
 func (v *Vm) operands() {
 
+}
+
+func (v *Vm) currentInstructions() code.Instructions {
+	return v.currentFrame().Instructions()
+}
+
+func (v *Vm) currentIp() int {
+	return v.currentFrame().ip
+}
+
+func (v *Vm) currentFrame() *Frame {
+	return v.frames[v.framesIndex-1]
+}
+
+func (v *Vm) pushFrame(newFrame *Frame) {
+	v.frames[v.framesIndex] = newFrame
+	v.framesIndex++
+}
+
+func (v *Vm) popFrame() *Frame {
+	oldFrame := v.currentFrame()
+	v.framesIndex--
+	return oldFrame
 }

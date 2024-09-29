@@ -569,6 +569,85 @@ func TestFunctions(t *testing.T) {
 	}
 }
 
+func TestFunctionCall(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input: `fn() {}()`,
+			expectedConstants: []any{
+				[]code.Instructions{
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpCall),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `fn() { return 5 + 10; }()`,
+			expectedConstants: []any{
+				5,
+				10,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpCall),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+		let noArgFn = fn() { 24; };
+		noArgFn();
+		`,
+			expectedConstants: []any{
+				24,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 1),  // the compiled function
+				code.Make(code.OpSetGlobal, 0), // insert compiled function to global store
+				code.Make(code.OpGetGlobal, 0), // retrieve compiled function from global store
+				code.Make(code.OpCall),         // call function
+				code.Make(code.OpPop),          // pop value
+			},
+		},
+		{
+			input: `
+let earlyReturn = fn() { return 0; 1 };
+`,
+			expectedConstants: []any{
+				0,
+				1,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpReturnValue),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpSetGlobal, 0),
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		runCompilerTest(t, i, &testCase)
+	}
+}
+
 func TestCompilerScopes(t *testing.T) {
 
 	compiler := NewCompiler()

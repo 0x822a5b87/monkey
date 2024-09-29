@@ -144,7 +144,12 @@ func (c *Compiler) compileLetStatement(statement *ast.LetStatement) error {
 
 // we don't emit code.OpReturn or code.OpReturnValue, leave this responsibility to the function
 func (c *Compiler) compileReturnStatement(statement *ast.ReturnStatement) error {
-	return c.Compile(statement.ReturnValue)
+	err := c.Compile(statement.ReturnValue)
+	if err != nil {
+		return err
+	}
+	c.emit(code.OpReturnValue)
+	return nil
 }
 
 func (c *Compiler) compileExpression(expr ast.Expression) error {
@@ -172,6 +177,9 @@ func (c *Compiler) compileExpression(expr ast.Expression) error {
 		return c.compileIndexExpression(expr)
 	case *ast.FnLiteral:
 		return c.compileFnLiteral(expr)
+	case *ast.CallExpression:
+		return c.compileCallExpression(expr)
+
 	}
 	return common.NewErrUnsupportedCompilingNode(expr.String())
 }
@@ -324,6 +332,17 @@ func (c *Compiler) compileFnLiteral(literal *ast.FnLiteral) error {
 	return nil
 }
 
+func (c *Compiler) compileCallExpression(call *ast.CallExpression) error {
+	// TODO compile arguments
+	err := c.Compile(call.Fn)
+	if err != nil {
+		return err
+	}
+
+	c.emit(code.OpCall)
+	return nil
+}
+
 func (c *Compiler) compileInfixOperator(operator string) error {
 	switch operator {
 	case string(token.PLUS):
@@ -389,8 +408,8 @@ func (c *Compiler) setLastEmitInstruction(op code.Opcode, pos instructionIndex) 
 	scope.last = NewEmittedInstruction(op, pos)
 }
 
-func (c *Compiler) isLastInstructionPop() bool {
-	return c.currentScope().last != nil && c.currentScope().last.Opcode == code.OpPop
+func (c *Compiler) isLastInstructionMatch(op code.Opcode) bool {
+	return c.currentScope().last != nil && c.currentScope().last.Opcode == op
 }
 
 func (c *Compiler) updateLastPopInstruction(op code.Opcode, operands ...int) {
@@ -446,14 +465,19 @@ func (c *Compiler) exitScope() code.Instructions {
 }
 
 func (c *Compiler) completeOpReturn(literal *ast.FnLiteral) {
+	if c.isLastInstructionMatch(code.OpReturnValue) {
+		return
+	}
+
 	if len(literal.Body.Statements) == 0 {
 		c.emit(code.OpReturn)
 		return
 	}
 
-	if c.isLastInstructionPop() {
+	if c.isLastInstructionMatch(code.OpPop) {
 		c.updateLastPopInstruction(code.OpReturnValue)
-	} else {
-		c.emit(code.OpReturnValue)
+		return
 	}
+
+	c.emit(code.OpReturnValue)
 }
