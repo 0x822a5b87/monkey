@@ -523,9 +523,69 @@ func (f *Frame) Instructions() code.Instructions {
 
 ```
 
+### local bindings on stack
 
+When we come across an `OpCall` instruction in the VM and are about to execute the function on stack, we take the current value of the stack pointer and put it aside -- for later use.We then increase the stack pointer by the number of locals used by the function we're about to execute. The result is a "hole" on the stack: we've increased the stack pointer without pushing any values, creating a region on the stack without any values.Below the hole: all the values previously pushed on the stack, before the function call. And above the hole is the functions workspace, where it will push and pop the values it needs to do its work.
 
+The hole itself is where we're going to store local bindings. We won't use the unique index of a local bindings as a key for another data structure, but instead as an index into the hole on the stack.
 
+```mermaid
+---
+title: function stack
+---
+block-beta
+columns 3
+
+block:group1:2
+	columns 1
+	stack3[" "]:1
+	stack2[" "]:1
+	stack1[" "]:1
+	stack0[" "]:1
+end
+desc1["empty"]
+group1 --> desc1
+
+block:group2:2
+	columns 1
+	Local3["..."]:1
+	Local2["Local 2"]:1
+	Local1["Local 1"]:1
+	Function
+end
+desc2["reserved for locals"]
+group2 --> desc2
+
+block:group3:2
+	columns 1
+	OtherValue1["..."]:1
+	OtherValue2["Other Value 3"]:1
+	OtherValue3["Other Value 2"]:1
+	OtherValue4["Other Value 1"]:1
+end
+desc3["pushed before call"]
+group3 --> desc3
+
+classDef front 1,fill:#696,stroke:#333;
+classDef back fill:#969,stroke:#333;
+classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef header fill: #696,color: #fff,font-weight: bold,padding: 10px;
+
+class stack3 op
+class stack2 op
+class stack1 op
+class stack0 op
+
+class Local3 header
+class Local2 header
+class Local1 header
+class Function header
+
+class OtherValue1 back
+class OtherValue2 back
+class OtherValue3 back
+class OtherValue4 back
+```
 
 
 

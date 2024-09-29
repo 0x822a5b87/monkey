@@ -332,9 +332,14 @@ func (c *Compiler) compileFnLiteral(literal *ast.FnLiteral) error {
 
 	c.completeOpReturn(literal)
 
+	numDefinitions := c.symbolTable.numDefinitions
 	fnInstructions := c.exitScope()
-	fnCompiled := &code.CompiledFunction{Instructions: fnInstructions}
-	c.emit(code.OpConstant, c.constants.AddConstant(fnCompiled).IntValue())
+	fnCompiled := &code.CompiledFunction{
+		Instructions:   fnInstructions,
+		NumOfLocalVars: numDefinitions,
+	}
+	index := c.constants.AddConstant(fnCompiled).IntValue()
+	c.emit(code.OpConstant, index)
 	return nil
 }
 

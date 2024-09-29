@@ -11,12 +11,15 @@ type Frame struct {
 	// ip means instruction pointer, we iterate through instructions by incrementing it.
 	// Then fetch the current instruction by directly accessing instructions.
 	ip int
+	// basePointer the stack pointer of callee
+	basePointer int
 }
 
-func NewFrame(f *code.CompiledFunction) *Frame {
+func NewFrame(f *code.CompiledFunction, stackPointer int) *Frame {
 	return &Frame{
-		fn: f,
-		ip: 0,
+		fn:          f,
+		ip:          0,
+		basePointer: stackPointer,
 	}
 }
 

@@ -246,6 +246,74 @@ c();
 	runVmTests(t, testCases)
 }
 
+func TestCallingFunctionWithBindings(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+		let one = fn() { let x = 1; return x; };
+		one();
+		`,
+			expected: &object.Integer{Value: 1},
+		},
+		{
+			input: `
+		let one = fn() { let one = 1; one; };
+		one();
+		`,
+			expected: &object.Integer{Value: 1},
+		},
+		{
+			input: `
+		let oneAndTwo = fn() { let one = 1; let two = 2; one + two; }; oneAndTwo();
+		`,
+			expected: &object.Integer{Value: 3},
+		},
+		{
+			input: `
+		let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+		let threeAndFour = fn() { let three = 3; let four = 4; three + four; };
+		oneAndTwo() + threeAndFour();
+		`,
+			expected: &object.Integer{Value: 10},
+		},
+		{
+			input: `
+		let firstFoobar = fn() { let foobar = 50; foobar; };
+		let secondFoobar = fn() { let foobar = 100; foobar; };
+		firstFoobar() + secondFoobar();
+		`,
+			expected: &object.Integer{Value: 150},
+		},
+		{
+			input: `
+		let globalSeed = 50;
+		
+		let minusOne = fn() {
+		 let num = 1;
+		 globalSeed - num;
+		};
+		
+		let minusTwo = fn() {
+		 let num = 2;
+		 globalSeed - num;
+		};
+		
+		minusOne() + minusTwo();
+		`,
+			expected: &object.Integer{Value: 97},
+		},
+		{
+			input: `
+			let noReturnFn = fn() { };
+			noReturnFn();
+		`,
+			expected: object.NativeNull,
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
 func TestFunctionsWithReturnStatement(t *testing.T) {
 	testCases := []vmTestCase{
 		{

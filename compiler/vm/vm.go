@@ -42,7 +42,7 @@ func NewVm(c *compiler.ByteCode) *Vm {
 		framesIndex: 0,
 	}
 
-	v.pushFrame(NewFrame(main))
+	v.pushFrame(NewFrame(main, 0))
 
 	return v
 }
@@ -94,6 +94,10 @@ func (v *Vm) Run() error {
 			err = v.executeReturnValue(op)
 		case code.OpReturn:
 			err = v.executeReturn(op)
+		case code.OpSetLocal:
+			err = v.executeSetLocal(op)
+		case code.OpGetLocal:
+			err = v.executeGetLocal(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -366,14 +370,22 @@ func (v *Vm) executeCall(op code.Opcode) error {
 	if !ok {
 		return common.NewErrTypeMismatch(object.ObjFunction.String(), obj.Type().String())
 	}
-	frame := NewFrame(fn)
+
+	frame := NewFrame(fn, v.sp)
+
+	// allocating memory for return value and local variables
+	v.sp += fn.NumOfLocalVars
 	v.pushFrame(frame)
+
 	return nil
 }
 
 func (v *Vm) executeReturnValue(op code.Opcode) error {
 	defer v.incrementIp(1)
-	v.popFrame()
+	returnValue := v.pop()
+	oldFrame := v.popFrame()
+	v.sp = oldFrame.basePointer
+	_ = v.push(returnValue)
 	return nil
 }
 
@@ -383,6 +395,22 @@ func (v *Vm) executeReturn(op code.Opcode) error {
 	return v.push(object.NativeNull)
 }
 
+func (v *Vm) executeSetLocal(op code.Opcode) error {
+	defer v.incrementIp(1)
+	relativeIndex := v.readUint8AndIncIp()
+	realIndex := v.currentFrame().basePointer + relativeIndex.IntValue()
+	v.stack[realIndex] = v.pop()
+	return nil
+}
+
+func (v *Vm) executeGetLocal(op code.Opcode) error {
+	defer v.incrementIp(1)
+	relativeIndex := v.readUint8AndIncIp()
+	realIndex := v.currentFrame().basePointer + relativeIndex.IntValue()
+	o := v.stack[realIndex]
+	return v.push(o)
+}
+
 func (v *Vm) readUint16() code.Index {
 	return code.ReadUint16(v.currentInstructions()[v.currentIp()+1:])
 }
@@ -390,6 +418,18 @@ func (v *Vm) readUint16() code.Index {
 func (v *Vm) readUint16AndIncIp() code.Index {
 	val := v.readUint16()
 	v.incrementIp(2)
+	return val
+}
+
+func (v *Vm) readUint8() code.Index {
+	nextIp := v.currentIp() + 1
+	val := v.currentInstructions()[nextIp]
+	return code.Index(val)
+}
+
+func (v *Vm) readUint8AndIncIp() code.Index {
+	val := v.readUint8()
+	v.incrementIp(1)
 	return val
 }
 

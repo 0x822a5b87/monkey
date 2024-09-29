@@ -13,7 +13,8 @@ const (
 // It can hold the Instructions we get from the compilation of a function literal, and it's an object.Object, which means
 // we can add it as a constant to our compiler.ByteCode and load it in the VM
 type CompiledFunction struct {
-	Instructions Instructions
+	Instructions   Instructions
+	NumOfLocalVars int
 }
 
 func (c *CompiledFunction) Type() object.ObjType {

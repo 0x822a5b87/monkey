@@ -64,6 +64,17 @@ const (
 	// More specifically, we need to differentiate between two cases where the Vm has to return from a function.
 	// 1. the execution of a function actually returning something;
 	// 2. the execution of a function ends without anything being returned;
+	// --------------------------------------
+	// Assuming we have a code snippet in monkey programming language:
+	// fn(){} ()
+	// The code snippet consists of two parts:
+	// 1. the definition of the function;
+	// 2. the calling of the function.
+	// What really concerns me is the second part -- the calling of the function.
+	// It produces two major instruction in compiling procedure :
+	// OpConstant The first instruction retrieves CompiledFunction from constant pool and pushes result onto stack.
+	// OpCall The second instruction pops the result from stack and execute it, that's why OpCall doesn't require an operand
+	// --------------------------------------
 	OpCall
 	// OpReturnValue It doesn't have any arguments. The value to be returned has to sit on top of the stack.
 	OpReturnValue
