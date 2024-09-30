@@ -325,6 +325,12 @@ func (c *Compiler) compileIndexExpression(indexExpr *ast.IndexExpression) error 
 
 func (c *Compiler) compileFnLiteral(literal *ast.FnLiteral) error {
 	c.enterScope()
+
+	for _, param := range literal.Parameters {
+		// just allocate memory for future arguments binding
+		c.symbolTable.Define(param.Value)
+	}
+
 	err := c.Compile(literal.Body)
 	if err != nil {
 		return err
@@ -344,12 +350,19 @@ func (c *Compiler) compileFnLiteral(literal *ast.FnLiteral) error {
 }
 
 func (c *Compiler) compileCallExpression(call *ast.CallExpression) error {
-	err := c.Compile(call.Fn)
+	err := c.compileExpression(call.Fn)
 	if err != nil {
 		return err
 	}
 
-	c.emit(code.OpCall)
+	for _, argument := range call.Arguments {
+		err = c.compileExpression(argument)
+		if err != nil {
+			return err
+		}
+	}
+
+	c.emit(code.OpCall, len(call.Arguments))
 	return nil
 }
 

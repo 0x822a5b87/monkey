@@ -202,43 +202,43 @@ func TestCallingFunctionsWithoutArgument(t *testing.T) {
 	testCases := []vmTestCase{
 		{
 			input: `
-let fivePlusTen = fn() { 5 + 10; };
-fivePlusTen();
-`,
+		let fivePlusTen = fn() { 5 + 10; };
+		fivePlusTen();
+		`,
 			expected: &object.Integer{Value: 15},
 		},
 		{
 			input: `
-let one = fn() { 1; };
-let two = fn() { 2; };
-two();
-`,
+				let one = fn() { 1; };
+				let two = fn() { 2; };
+				two();
+				`,
 			expected: &object.Integer{Value: 2},
 		},
 		{
 			input: `
-let one = fn() { 1; };
-let two = fn() { 2; };
-two();
-one();
-`,
+				let one = fn() { 1; };
+				let two = fn() { 2; };
+				two();
+				one();
+				`,
 			expected: &object.Integer{Value: 1},
 		},
 		{
 			input: `
-let one = fn() { 1; };
-let two = fn() { 2; };
-one() + two();
-`,
+		let one = fn() { 1; };
+		let two = fn() { 2; };
+		one() + two();
+		`,
 			expected: &object.Integer{Value: 3},
 		},
 		{
 			input: `
-let a = fn() { 1; };
-let b = fn() { a() + 2; };
-let c = fn() { b() + 3; };
-c();
-`,
+		let a = fn() { 1; };
+		let b = fn() { a() + 2; };
+		let c = fn() { b() + 3; };
+		c();
+		`,
 			expected: &object.Integer{Value: 6},
 		},
 	}
@@ -336,6 +336,68 @@ let earlyExit = fn() { 99; return 100; };
 earlyExit();
 `,
 			expected: &object.Integer{Value: 100},
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
+func TestFunctionWithArguments(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+				let oneArg = fn(a) { a };
+				oneArg(24);
+`,
+			expected: &object.Integer{Value: 24},
+		},
+		{
+			input: `
+let sum = fn(a, b) {
+	let c = a + b;
+	c;
+};
+sum(1, 2);
+`,
+			expected: &object.Integer{Value: 3},
+		},
+		{
+			input: `
+let sum = fn(a, b) {
+	let c = a + b;
+	c;
+};
+sum(1, 2) + sum(3, 4);
+`,
+			expected: &object.Integer{Value: 10},
+		},
+		{
+			input: `
+let globalNum = 10;
+
+let sum = fn(a, b) {
+	let c = a + b;
+	c + globalNum;
+};
+
+sum(1, 2);
+`,
+			expected: &object.Integer{Value: 13},
+		},
+		{
+			input: `
+let sum = fn(a, b) {
+	let c = a + b;
+	c;
+};
+
+let outer = fn() {
+	sum(-100, 15) + sum(95, -10);
+};
+
+outer();
+`,
+			expected: &object.Integer{Value: 0},
 		},
 	}
 

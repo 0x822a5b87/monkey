@@ -365,16 +365,22 @@ func (v *Vm) executeIndex(op code.Opcode) error {
 }
 
 func (v *Vm) executeCall(op code.Opcode) error {
-	obj := v.pop()
+	// NumOfLocalVars = NumOfArguments + NumOfVariablesDefinedInFunction
+	numOfArgs := v.readUint8AndIncIp()
+
+	obj := v.stack[v.sp-numOfArgs.IntValue()-1]
 	fn, ok := obj.(*code.CompiledFunction)
 	if !ok {
 		return common.NewErrTypeMismatch(object.ObjFunction.String(), obj.Type().String())
 	}
 
-	frame := NewFrame(fn, v.sp)
+	// base pointer points to the start position of local variable
+	basePointer := v.sp - numOfArgs.IntValue()
+	// stack pointer points to the start position of the new frame's stack
+	stackPointer := v.sp + fn.NumOfLocalVars
 
-	// allocating memory for return value and local variables
-	v.sp += fn.NumOfLocalVars
+	frame := NewFrame(fn, basePointer)
+	v.sp = stackPointer
 	v.pushFrame(frame)
 
 	return nil
@@ -384,14 +390,15 @@ func (v *Vm) executeReturnValue(op code.Opcode) error {
 	defer v.incrementIp(1)
 	returnValue := v.pop()
 	oldFrame := v.popFrame()
-	v.sp = oldFrame.basePointer
+	v.sp = oldFrame.basePointer - 1
 	_ = v.push(returnValue)
 	return nil
 }
 
 func (v *Vm) executeReturn(op code.Opcode) error {
 	defer v.incrementIp(1)
-	v.popFrame()
+	oldFrame := v.popFrame()
+	v.sp = oldFrame.basePointer - 1
 	return v.push(object.NativeNull)
 }
 

@@ -529,6 +529,17 @@ When we come across an `OpCall` instruction in the VM and are about to execute t
 
 The hole itself is where we're going to store local bindings. We won't use the unique index of a local bindings as a key for another data structure, but instead as an index into the hole on the stack.
 
+>The entire execution process of the function is as follows:
+>
+>1. Encountering the `OpConstant` instruction or `OpGetGlobal` instruction, which retrieves the CompiledFunction from the stack.
+>2. Encountering the OpCall instruction, which executes the result obtained from the execution of OpConstant.
+>3. Saving the stack pointer of the current frame into the new frame's context, which will be used to reset the stack pointer after the function call ends.
+>4. Entering the new frame;
+>5. Allocating the necessary positions for local variables and function;
+>6. Executing the function;
+>7. Resetting stack pointer to the saved value;
+>8. Exiting the current frame;
+
 ```mermaid
 ---
 title: function stack
@@ -538,10 +549,10 @@ columns 3
 
 block:group1:2
 	columns 1
-	stack3[" "]:1
-	stack2[" "]:1
-	stack1[" "]:1
-	stack0[" "]:1
+	stack3["stack 3"]:1
+	stack2["stack 2"]:1
+	stack1["stack 1"]:1
+	stack0["stack 0"]:1
 end
 desc1["empty"]
 group1 --> desc1
@@ -586,6 +597,95 @@ class OtherValue2 back
 class OtherValue3 back
 class OtherValue4 back
 ```
+
+### Arguments
+
+> arguments to function calls are a special case of local bindings.
+>
+> The have the same lifespan, the have the same scope, they resolve in the same way.The only different is their creation. 
+>
+> - Local bindings are created explicitly by the user with a let statement and result in `OpSetLocal` instructions being emitted by the compiler.
+> - Arguments are implicitly bound to names, which is done behind the scenes by the compiler and the VM.
+
+There are three essential pointer in the implementation called `stackPointer`, `basePointer`, `functionPointer`:
+
+1. base pointer points to the start position of local variables;
+2. stack pointer points to the start position of the new frame's stack;
+3. function pointer points to the position of function;
+
+When encountering a new function call, we create a new frame with these three pointer:
+
+1. Retrieve function through function pointer;
+2. Execute statements of the function and place the result onto stack through stack pointer;
+3. Get and set local variable through base pointer and relative offset of each variable, for example : `Local 0` == `basePointer + 0`. 
+4. **When the execution of function is completed, we reset the stack pointer of the parent frame to function pointer which is the original value of the parent frame**
+
+```mermaid
+---
+title: function stack
+---
+block-beta
+columns 3
+
+block:group1:2
+	columns 2
+	stack3["stack 3"]:2
+	stack2["stack 2"]:2
+	stack1["stack 1"]:2
+	stack0["stack 0"]:1
+    stackPointer:1
+end
+stackPointer --> stack0
+desc1["empty"]:1
+
+block:group2:2
+	columns 2
+	Local2["..."]:2
+	Local1["Local 1"]:2
+	Local0["Local 0"]:1
+    basePointer
+	Function:1
+	functionPointer
+end
+desc2["reserved for locals"]:1
+basePointer --> Local0
+functionPointer --> Function
+
+block:group3:2
+	columns 1
+	OtherValue1["..."]:1
+	OtherValue2["Other Value 3"]:1
+	OtherValue3["Other Value 2"]:1
+	OtherValue4["Other Value 1"]:1
+end
+desc3["pushed before call"]
+
+classDef front 1,fill:#FFCCCC,stroke:#333;
+classDef back fill:#969,stroke:#333;
+classDef op fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+classDef header fill: #696,color: #fff,font-weight: bold,padding: 10px;
+
+class stack3 op
+class stack2 op
+class stack1 op
+class stack0 op
+
+class Local0 header
+class Local2 header
+class Local1 header
+class Function header
+
+class OtherValue1 back
+class OtherValue2 back
+class OtherValue3 back
+class OtherValue4 back
+
+class basePointer front
+class stackPointer front
+class functionPointer front
+```
+
+
 
 
 

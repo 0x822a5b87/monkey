@@ -656,7 +656,7 @@ func TestFunctionCall(t *testing.T) {
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
-				code.Make(code.OpCall),
+				code.Make(code.OpCall, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -674,15 +674,15 @@ func TestFunctionCall(t *testing.T) {
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 2),
-				code.Make(code.OpCall),
+				code.Make(code.OpCall, 0),
 				code.Make(code.OpPop),
 			},
 		},
 		{
 			input: `
-		let noArgFn = fn() { 24; };
-		noArgFn();
-		`,
+				let noArgFn = fn() { 24; };
+				noArgFn();
+				`,
 			expectedConstants: []any{
 				24,
 				[]code.Instructions{
@@ -694,14 +694,14 @@ func TestFunctionCall(t *testing.T) {
 				code.Make(code.OpConstant, 1),  // the compiled function
 				code.Make(code.OpSetGlobal, 0), // insert compiled function to global store
 				code.Make(code.OpGetGlobal, 0), // retrieve compiled function from global store
-				code.Make(code.OpCall),         // call function
+				code.Make(code.OpCall, 0),      // call function
 				code.Make(code.OpPop),          // pop value
 			},
 		},
 		{
 			input: `
-let earlyReturn = fn() { return 0; 1 };
-`,
+		let earlyReturn = fn() { return 0; 1 };
+		`,
 			expectedConstants: []any{
 				0,
 				1,
@@ -717,9 +717,87 @@ let earlyReturn = fn() { return 0; 1 };
 				code.Make(code.OpSetGlobal, 0),
 			},
 		},
+		{
+			input: `
+let oneArg = fn(a) { };
+oneArg(65535)
+`,
+			expectedConstants: []any{
+				[]code.Instructions{
+					code.Make(code.OpReturn),
+				},
+				65535,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpCall, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+				let oneArg = fn(a) { a };
+				oneArg(24);
+				`,
+			expectedConstants: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpReturnValue),
+				},
+				24,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpCall, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+let manyArg = fn(a, b, c) { };
+manyArg(24, 25, 26);
+`,
+			expectedConstants: []any{
+				[]code.Instructions{
+					code.Make(code.OpReturn),
+				},
+				24,
+				25,
+				26,
+			},
+			expectedInstructions: []code.Instructions{
+				// pushing the function retrieved from constant pool onto the stack
+				code.Make(code.OpConstant, 0),
+				// binding the topmost object we just retrieved from constant pool to global variable
+				code.Make(code.OpSetGlobal, 0),
+
+				// calling function
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpCall, 3),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 
 	for i, testCase := range testCases {
+		runCompilerTest(t, i, &testCase)
+	}
+}
+
+func TestFunctionCalls(t *testing.T) {
+	tests := []compilerTestCase{}
+
+	for i, testCase := range tests {
 		runCompilerTest(t, i, &testCase)
 	}
 }
