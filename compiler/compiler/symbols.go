@@ -1,5 +1,7 @@
 package compiler
 
+import "0x822a5b87/monkey/interpreter/object"
+
 // A symbol table is a data structure used in interpreters and compilers to associate identifiers
 // with information. It can be used in every phase, from lexing to code generation,
 // to store and retrieve information about a given identifiers(which can be called a symbol).
@@ -7,8 +9,9 @@ package compiler
 type SymbolScope string
 
 const (
-	GlobalScope SymbolScope = "Global"
-	LocalScope  SymbolScope = "Local"
+	GlobalScope  SymbolScope = "Global"
+	LocalScope   SymbolScope = "Local"
+	BuiltInScope SymbolScope = "BuiltIn"
 )
 
 type Symbol struct {
@@ -43,6 +46,17 @@ func (st *SymbolTable) Define(name string) Symbol {
 	return s
 }
 
+func (st *SymbolTable) DefineBuiltIn(index int, name string) Symbol {
+	st.checkDefine()
+	s := Symbol{
+		Name:  name,
+		Scope: BuiltInScope,
+		Index: index,
+	}
+	st.store[name] = s
+	return s
+}
+
 func (st *SymbolTable) Resolve(name string) (Symbol, bool) {
 	s, ok := st.store[name]
 	if !ok && st.Outer != nil {
@@ -57,10 +71,11 @@ func (st *SymbolTable) checkDefine() bool {
 }
 
 func NewSymbolTable() *SymbolTable {
-	return &SymbolTable{
-		store:          make(map[string]Symbol),
-		numDefinitions: 0,
+	s := &SymbolTable{store: make(map[string]Symbol)}
+	for index, builtIn := range object.BuiltIns {
+		s.DefineBuiltIn(index, builtIn.Name)
 	}
+	return s
 }
 
 func NewEnclosedSymbolTable(parent *SymbolTable) *SymbolTable {

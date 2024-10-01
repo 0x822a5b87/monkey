@@ -84,6 +84,8 @@ const (
 	OpSetLocal
 	// OpGetLocal retrieve local variable with one-byte operand.
 	OpGetLocal
+	OpSetBuiltIn
+	OpGetBuiltIn
 )
 
 var definitions = map[Opcode]*Definition{
@@ -125,6 +127,8 @@ var definitions = map[Opcode]*Definition{
 	OpReturn:        {"OpReturn", "", []int{}},
 	OpSetLocal:      {"OpSetLocal", "", []int{1}},
 	OpGetLocal:      {"OpGetLocal", "", []int{1}},
+	OpSetBuiltIn:    {"OpSetBuiltIn", "", []int{1}},
+	OpGetBuiltIn:    {"OpGetBuiltIn", "", []int{1}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

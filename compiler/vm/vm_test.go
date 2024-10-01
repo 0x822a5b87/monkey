@@ -428,6 +428,63 @@ noReturnTwo();
 	runVmTests(t, testCases)
 }
 
+func TestBuiltInFunction(t *testing.T) {
+	testCases := []vmTestCase{
+		{
+			input: `
+		len([]);
+		`,
+			expected: &object.Integer{Value: 0},
+		},
+		{
+			input: `
+		len([-1]);
+		`,
+			expected: &object.Integer{Value: 1},
+		},
+		{
+			input: `
+		len([-1, 2, -3, 4, 65535, -100]);
+		`,
+			expected: &object.Integer{Value: 6},
+		},
+		{
+			input: `
+		first([-1, 2, -3, 4, 65535, -100]);
+		`,
+			expected: &object.Integer{Value: -1},
+		},
+		{
+			input: `
+		last([-1, 2, -3, 4, 65535, -100]);
+		`,
+			expected: &object.Integer{Value: -100},
+		},
+		{
+			input: `
+let a = [-100, 100, 10];
+a = push(a, 0);
+a = push(a, 1);
+a = push(a, 2);
+last(a);
+`,
+			expected: &object.Integer{Value: 2},
+		},
+		{
+			input: `
+let a = [-100, 100, 10];
+a = push(a, 0);
+a = push(a, 1);
+a = push(a, 2);
+first(a);
+`,
+			expected: &object.Integer{Value: -100},
+		},
+	}
+
+	runVmTests(t, testCases)
+}
+
 func runVmTests(t *testing.T, testCases []vmTestCase) {
 	t.Helper()
 
@@ -575,6 +632,10 @@ func runVm(t *testing.T, caseIndex int, input string) *Vm {
 	}
 
 	vm := NewVm(c.ByteCode())
+	{
+		// TODO delete log
+		vm.currentInstructions().TestOnlyPrintln()
+	}
 	err = vm.Run()
 	if err != nil {
 		t.Fatalf("test case [%d] vm error : [%s] for input = [%s]", caseIndex, err.Error(), input)

@@ -883,6 +883,60 @@ func TestStringExpression(t *testing.T) {
 	}
 }
 
+func TestBuiltIn(t *testing.T) {
+	testCases := []compilerTestCase{
+		{
+			input: `
+len([65535]);
+`,
+			expectedConstants: []any{65535},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpGetBuiltIn, 0),
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpArray, 1),
+				code.Make(code.OpCall, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+push([], 1);
+`,
+			expectedConstants: []any{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpGetBuiltIn, 4),
+				code.Make(code.OpArray, 0),
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpCall, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+fn() {
+	len([]);
+}
+`,
+			expectedConstants: []any{
+				[]code.Instructions{
+					code.Make(code.OpGetBuiltIn, 0),
+					code.Make(code.OpArray, 0),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	for i, testCase := range testCases {
+		runCompilerTest(t, i, &testCase)
+	}
+}
+
 func runCompilerTest(t *testing.T, caseIndex int, testCase *compilerTestCase) {
 	t.Helper()
 	c := NewCompiler()

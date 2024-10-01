@@ -136,11 +136,7 @@ func (c *Compiler) compileLetStatement(statement *ast.LetStatement) error {
 	}
 
 	symbol := c.symbolTable.Define(statement.Name.Value)
-	if c.isGlobalScope(symbol) {
-		c.emit(code.OpSetGlobal, symbol.Index)
-	} else {
-		c.emit(code.OpSetLocal, symbol.Index)
-	}
+	c.emitSetScope(symbol)
 
 	return nil
 }
@@ -260,11 +256,7 @@ func (c *Compiler) compileIdentifier(identifier *ast.Identifier) error {
 	if !ok {
 		return common.NewUnresolvedVariable(identifier.Value)
 	}
-	if c.isGlobalScope(symbol) {
-		c.emit(code.OpGetGlobal, symbol.Index)
-	} else {
-		c.emit(code.OpGetLocal, symbol.Index)
-	}
+	c.emitGetScope(symbol)
 	return nil
 }
 
@@ -504,6 +496,28 @@ func (c *Compiler) completeOpReturn(literal *ast.FnLiteral) {
 	c.emit(code.OpReturnValue)
 }
 
-func (c *Compiler) isGlobalScope(symbol Symbol) bool {
-	return symbol.Scope == GlobalScope
+func (c *Compiler) emitGetScope(symbol Symbol) {
+	switch symbol.Scope {
+	case GlobalScope:
+		c.emit(code.OpGetGlobal, symbol.Index)
+	case LocalScope:
+		c.emit(code.OpGetLocal, symbol.Index)
+	case BuiltInScope:
+		c.emit(code.OpGetBuiltIn, symbol.Index)
+	default:
+		panic(common.NewUnknownScope(symbol.Name))
+	}
+}
+
+func (c *Compiler) emitSetScope(symbol Symbol) {
+	switch symbol.Scope {
+	case GlobalScope:
+		c.emit(code.OpSetGlobal, symbol.Index)
+	case LocalScope:
+		c.emit(code.OpSetLocal, symbol.Index)
+	case BuiltInScope:
+		c.emit(code.OpSetBuiltIn, symbol.Index)
+	default:
+		panic(common.NewUnknownScope(symbol.Name))
+	}
 }

@@ -61,3 +61,7 @@ func NewOpcodeUndefined(op byte) error {
 func NewOperandWidthError(operandsCount int) error {
 	return errOperandWidth.format(operandsCount)
 }
+
+func NewUnknownScope(scope string) error {
+	return errUnknownScope.format(scope)
+}

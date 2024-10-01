@@ -98,6 +98,8 @@ func (v *Vm) Run() error {
 			err = v.executeSetLocal(op)
 		case code.OpGetLocal:
 			err = v.executeGetLocal(op)
+		case code.OpGetBuiltIn:
+			err = v.executeGetBuiltIn(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -369,19 +371,29 @@ func (v *Vm) executeCall(op code.Opcode) error {
 	numOfArgs := v.readUint8AndIncIp()
 
 	obj := v.stack[v.sp-numOfArgs.IntValue()-1]
-	fn, ok := obj.(*code.CompiledFunction)
-	if !ok {
+
+	switch fn := obj.(type) {
+	case *code.CompiledFunction:
+		// base pointer points to the start position of local variable
+		basePointer := v.sp - numOfArgs.IntValue()
+		// stack pointer points to the start position of the new frame's stack
+		stackPointer := v.sp + fn.NumOfLocalVars
+		frame := NewFrame(fn, basePointer)
+		v.sp = stackPointer
+		v.pushFrame(frame)
+	case *object.BuiltIn:
+		defer v.incrementIp(1)
+		args := v.stack[v.sp-numOfArgs.IntValue() : v.sp]
+		o := fn.BuiltInFn(args...)
+		v.sp = v.sp - numOfArgs.IntValue() - 1
+		if o != nil {
+			return v.push(o)
+		} else {
+			return v.push(object.NativeNull)
+		}
+	default:
 		return common.NewErrTypeMismatch(object.ObjFunction.String(), obj.Type().String())
 	}
-
-	// base pointer points to the start position of local variable
-	basePointer := v.sp - numOfArgs.IntValue()
-	// stack pointer points to the start position of the new frame's stack
-	stackPointer := v.sp + fn.NumOfLocalVars
-
-	frame := NewFrame(fn, basePointer)
-	v.sp = stackPointer
-	v.pushFrame(frame)
 
 	return nil
 }
@@ -415,6 +427,13 @@ func (v *Vm) executeGetLocal(op code.Opcode) error {
 	relativeIndex := v.readUint8AndIncIp()
 	realIndex := v.currentFrame().basePointer + relativeIndex.IntValue()
 	o := v.stack[realIndex]
+	return v.push(o)
+}
+
+func (v *Vm) executeGetBuiltIn(op code.Opcode) error {
+	defer v.incrementIp(1)
+	index := v.readUint8AndIncIp()
+	o := object.BuiltIns[index]
 	return v.push(o)
 }
 

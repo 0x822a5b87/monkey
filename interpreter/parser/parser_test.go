@@ -9,6 +9,37 @@ import (
 	"testing"
 )
 
+func TestAssign(t *testing.T) {
+	input := `
+let x = 5;
+x = 10;
+`
+	l := lexer.NewLexer(input)
+	p := NewParser(*l)
+	program := p.ParseProgram()
+
+	if program == nil {
+		t.Fatal("ParseProgram return nil")
+	}
+
+	if len(program.Statements) != 2 {
+		t.Fatalf("program.Statements does not contain 3 statements. got %d", len(program.Statements))
+	}
+
+	expectedStatements := []struct {
+		expectedIdentifier string
+	}{
+		{"x"},
+	}
+
+	for i, expectedStatement := range expectedStatements {
+		stmt := program.Statements[i]
+		if !testLetStatement(t, stmt, expectedStatement.expectedIdentifier) {
+			t.Fatalf("line [%d], expected [%s], got [%s]", i, expectedStatement.expectedIdentifier, stmt.TokenLiteral())
+		}
+	}
+}
+
 func TestParseProgram(t *testing.T) {
 	input := `
 let x = 5;

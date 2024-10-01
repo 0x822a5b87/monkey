@@ -1,7 +1,7 @@
 package object
 
 const (
-	builtInFnNameLet   = "len"
+	builtInFnNameLen   = "len"
 	builtInFnNameFirst = "first"
 	builtInFnNameLast  = "last"
 	builtInFnNameRest  = "rest"
@@ -49,68 +49,7 @@ func init() {
 		parent: nil,
 	}
 
-	globalEnv.Set(builtInFnNameLet, &BuiltIn{BuiltInFn: func(objs ...Object) Object {
-		if len(objs) != 1 {
-			return newWrongArgumentSizeError(len(objs), 1)
-		}
-
-		obj := objs[0]
-		builtInLen, ok := obj.(Len)
-		if !ok {
-			return newWrongArgumentTypeError(builtInFnNameLet, obj.Type())
-		}
-		return &Integer{Value: builtInLen.Len().Value}
-	}})
-
-	globalEnv.Set(builtInFnNameFirst, &BuiltIn{BuiltInFn: func(objs ...Object) Object {
-		if len(objs) != 1 {
-			return newWrongArgumentSizeError(len(objs), 1)
-		}
-
-		obj := objs[0]
-		builtInFirst, ok := obj.(List)
-		if !ok {
-			return newWrongArgumentTypeError(builtInFnNameFirst, obj.Type())
-		}
-		return builtInFirst.First()
-	}})
-
-	globalEnv.Set(builtInFnNameLast, &BuiltIn{BuiltInFn: func(objs ...Object) Object {
-		if len(objs) != 1 {
-			return newWrongArgumentSizeError(len(objs), 1)
-		}
-
-		obj := objs[0]
-		buildInLast, ok := obj.(List)
-		if !ok {
-			return newWrongArgumentTypeError(builtInFnNameLast, obj.Type())
-		}
-		return buildInLast.Last()
-	}})
-
-	globalEnv.Set(builtInFnNameRest, &BuiltIn{BuiltInFn: func(objs ...Object) Object {
-		if len(objs) != 1 {
-			return newWrongArgumentSizeError(len(objs), 1)
-		}
-
-		obj := objs[0]
-		rest, ok := obj.(Rest)
-		if !ok {
-			return newWrongArgumentTypeError(builtInFnNameRest, obj.Type())
-		}
-		return rest.Rest()
-	}})
-
-	globalEnv.Set(builtInFnNamePush, &BuiltIn{BuiltInFn: func(objs ...Object) Object {
-		if len(objs) != 2 {
-			return newWrongArgumentSizeError(len(objs), 2)
-		}
-
-		obj := objs[0]
-		push, ok := obj.(Push)
-		if !ok {
-			return newWrongArgumentTypeError(builtInFnNamePush, obj.Type())
-		}
-		return push.Push(objs[1])
-	}})
+	for _, builtIn := range BuiltIns {
+		globalEnv.Set(builtIn.Name, builtIn)
+	}
 }
