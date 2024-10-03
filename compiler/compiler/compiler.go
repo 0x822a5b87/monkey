@@ -37,7 +37,7 @@ func NewCompiler() *Compiler {
 
 	c := &Compiler{
 		constants:   code.NewConstants(),
-		symbolTable: NewSymbolTable(),
+		symbolTable: NewGlobalSymbolTable(),
 		scopes:      []*CompilationScope{mainScope},
 		scopeIndex:  0,
 	}

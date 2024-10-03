@@ -72,6 +72,11 @@ func (st *SymbolTable) checkDefine() bool {
 
 func NewSymbolTable() *SymbolTable {
 	s := &SymbolTable{store: make(map[string]Symbol)}
+	return s
+}
+
+func NewGlobalSymbolTable() *SymbolTable {
+	s := &SymbolTable{store: make(map[string]Symbol)}
 	for index, builtIn := range object.BuiltIns {
 		s.DefineBuiltIn(index, builtIn.Name)
 	}
