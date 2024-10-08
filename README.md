@@ -700,7 +700,52 @@ More specifically, closure invovles two relative instructions:
 | OpClosure   | 2        | 1. The first operand is the constant index, it specifies where in the constant pool we can find the CompiledFunction that's to be converted into a closure.\n2. The second operand, it specifies how many free variables sit on the stackand to be translated to about-to-be-created closure. |
 | OpGetFree   | 1        | index of free variable in the the closure field              |
 
+#### a simple example
 
+```js
+fn outer(a, b) {
+	fn inner(c) {
+		c + b + a;
+	}
+}
+
+let ret = outer(1, 2);
+ret(3);
+```
+
+```asm
+# inner
+0000 OpGetLocal 0
+0002 OpGetFree 0
+0004 OpAdd
+0005 OpGetFree 1
+0007 OpAdd
+0008 OpReturnValue
+```
+
+```asm
+// outer
+0000 OpGetLocal 1
+0002 OpGetLocal 0
+0004 OpClosure 0 2
+0008 OpReturnValue
+```
+
+Compilation:
+
+1. Enter the compilation process of the outer function and initialize variables "a" and "b" in the symbol table of the outer function.
+2. During the traversal, enter the compilation process of the inner function.
+3. Using the Resolve method of the inner symbol table, we determine that "a" and "b" are free variables: they are neither in the current scope, nor are they built-in functions or global variables. During the Resolve process, we assign the index 0 to "b" and the index 1 to "a" based on the order of variable occurrences.
+4. During the Resolve process, we add the original Symbols obtained from the symbol table to the Free variables of the inner function's symbol table. Note that they contain the original values of the variables.
+5. Then exit to the outer compilation phase. At this point, we find that the inner function contains two free variables, "b" and "a". We can now generate instructions `OpGetLocal 1` and `OpGetLocal 0`, where 1 and 0 are the indices of the original values in the Free variables.
+6. Finally, generate the instruction `OpClosure 0 2`.
+
+Execution:
+
+1. During execution, we first execute the instructions `OpGetLocal 1` and `OpGetLocal 0` and place the results on the stack.
+2. Then execute the instruction `OpClosure 0 2`, retrieve the result from the stack, and store it in the Free object of the Closure.
+3. Return a closure object that contains an array of free variables [b = 2, a = 1].
+4. Execute the closure and obtain the result of c + b + a.
 
 
 
