@@ -88,7 +88,6 @@ func evalInfixExpression(infix *ast.InfixExpression, env *object.Environment) ob
 		return evalNotEqual(lhsObj, rhsObj)
 	}
 
-	// TODO support more infix expression
 	return object.NativeNull
 }
 
@@ -400,7 +399,6 @@ func evalFn(call *ast.CallExpression, fn *object.Fn, callEnv *object.Environment
 	// env for arguments
 	argumentsEnv := object.NewEnvironment(fn.Env)
 	for i, arg := range call.Arguments {
-		// TODO add scope for block
 		value := Eval(arg, callEnv)
 		if value.Type() == object.ObjError {
 			return value

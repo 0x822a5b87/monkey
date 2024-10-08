@@ -28,7 +28,6 @@ type SymbolTable struct {
 	// it's important to know free variables also have its own scope, and it exits in a symbol table like regular variables
 	Free  []Symbol
 	store map[string]Symbol
-	// TODO figure out its usage
 	// num of this symbol table have been defined which used to prevent it being release by GC at an inappropriate time
 	numDefinitions int
 	numFree        int

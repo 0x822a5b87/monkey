@@ -499,8 +499,7 @@ func (c *Compiler) genClosure() error {
 
 	// the closure is inside another function
 	closure := &code.Closure{
-		Fn: fnCompiled,
-		// TODO add num of free variables
+		Fn:   fnCompiled,
 		Free: make([]object.Object, subSymbolTable.numFree),
 	}
 
@@ -509,7 +508,6 @@ func (c *Compiler) genClosure() error {
 	}
 
 	index := c.constants.AddConstant(closure).IntValue()
-	// TODO add number of free variables
 	c.emit(code.OpClosure, index, subSymbolTable.numFree)
 
 	return nil
