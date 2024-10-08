@@ -29,7 +29,10 @@ type Vm struct {
 }
 
 func NewVm(c *compiler.ByteCode) *Vm {
-	main := &code.CompiledFunction{Instructions: c.Instructions}
+	main := &code.Closure{
+		Fn:   &code.CompiledFunction{Instructions: c.Instructions},
+		Free: make([]object.Object, 0),
+	}
 
 	v := &Vm{
 		constants: c.Constants,
@@ -100,6 +103,10 @@ func (v *Vm) Run() error {
 			err = v.executeGetLocal(op)
 		case code.OpGetBuiltIn:
 			err = v.executeGetBuiltIn(op)
+		case code.OpClosure:
+			err = v.executeClosure(op)
+		case code.OpGetFree:
+			err = v.executeGetFree(op)
 		default:
 			err = fmt.Errorf("wrong type of Opcode : [%d]", op)
 		}
@@ -369,33 +376,40 @@ func (v *Vm) executeIndex(op code.Opcode) error {
 func (v *Vm) executeCall(op code.Opcode) error {
 	// NumOfLocalVars = NumOfArguments + NumOfVariablesDefinedInFunction
 	numOfArgs := v.readUint8AndIncIp()
-
 	obj := v.stack[v.sp-numOfArgs.IntValue()-1]
 
 	switch fn := obj.(type) {
-	case *code.CompiledFunction:
-		// base pointer points to the start position of local variable
-		basePointer := v.sp - numOfArgs.IntValue()
-		// stack pointer points to the start position of the new frame's stack
-		stackPointer := v.sp + fn.NumOfLocalVars
-		frame := NewFrame(fn, basePointer)
-		v.sp = stackPointer
-		v.pushFrame(frame)
+	case *code.Closure:
+		return v.executeCallClosure(fn, numOfArgs.IntValue())
 	case *object.BuiltIn:
-		defer v.incrementIp(1)
-		args := v.stack[v.sp-numOfArgs.IntValue() : v.sp]
-		o := fn.BuiltInFn(args...)
-		v.sp = v.sp - numOfArgs.IntValue() - 1
-		if o != nil {
-			return v.push(o)
-		} else {
-			return v.push(object.NativeNull)
-		}
+		return v.executeCallBuiltIn(fn, numOfArgs.IntValue())
 	default:
 		return common.NewErrTypeMismatch(object.ObjFunction.String(), obj.Type().String())
 	}
+}
+
+func (v *Vm) executeCallClosure(closure *code.Closure, numOfArgs int) error {
+	// base pointer points to the start position of local variable
+	basePointer := v.sp - numOfArgs
+	// stack pointer points to the start position of the new frame's stack
+	stackPointer := v.sp + closure.Fn.NumOfLocalVars
+	frame := NewFrame(closure, basePointer)
+	v.sp = stackPointer
+	v.pushFrame(frame)
 
 	return nil
+}
+
+func (v *Vm) executeCallBuiltIn(builtIn *object.BuiltIn, numOfArgs int) error {
+	defer v.incrementIp(1)
+	args := v.stack[v.sp-numOfArgs : v.sp]
+	o := builtIn.BuiltInFn(args...)
+	v.sp = v.sp - numOfArgs - 1
+	if o != nil {
+		return v.push(o)
+	} else {
+		return v.push(object.NativeNull)
+	}
 }
 
 func (v *Vm) executeReturnValue(op code.Opcode) error {
@@ -435,6 +449,56 @@ func (v *Vm) executeGetBuiltIn(op code.Opcode) error {
 	index := v.readUint8AndIncIp()
 	o := object.BuiltIns[index]
 	return v.push(o)
+}
+
+func (v *Vm) executeClosure(op code.Opcode) error {
+	defer v.incrementIp(1)
+	index := v.readUint16AndIncIp()
+	numFree := v.readUint8AndIncIp()
+	o := v.constants.GetConstant(index)
+	closure, ok := o.(*code.Closure)
+	if !ok {
+		return common.NewErrTypeMismatch(code.ObjClosure.String(), o.Type().String())
+	}
+	free := make([]object.Object, numFree)
+	// Recap how we come to this :
+	// For each OpClosure instruction, it is preceded by a corresponding number of OpGetLocal/OpGetFree/OpGetGlobal instructions.
+	// These instructions will retrieve object from scope and put onto stack.
+	// Here is an example:
+	//
+	// fn(a) {
+	// 		fn(b) {
+	// 			a + b
+	//		}
+	// }
+	//
+	// The outer function is compiled into a constant CompiledFunction, then be wrapped into a Closure:
+	// 					code.Make(code.OpGetLocal, 0),
+	//					code.Make(code.OpClosure, 0, 1),
+	//					code.Make(code.OpReturnValue),
+	// These instructions retrieve local variable from argument, then put it onto stack.
+	// Meanwhile, the instruction OpClosure will add its value to Free.
+	//
+	// The inner function is also compiled into a constant CompiledFunction, then be wrapped into a Closure:
+	// 					code.Make(code.OpGetFree, 0),
+	//					code.Make(code.OpGetLocal, 0),
+	//					code.Make(code.OpAdd),
+	//					code.Make(code.OpReturnValue),
+	// Instead of the instruction OpGetLocal, the instruction is OpGetFree which retrieve object from the variable Free of outer function
+	for i := 0; i < numFree.IntValue(); i++ {
+		free[i] = v.stack[v.sp-numFree.IntValue()+i]
+	}
+	closure.Free = free
+	return v.push(closure)
+}
+
+func (v *Vm) executeGetFree(op code.Opcode) error {
+	defer v.incrementIp(1)
+	freeIndex := v.readUint8AndIncIp()
+
+	closure := v.currentFrame().fn
+
+	return v.push(closure.Free[freeIndex])
 }
 
 func (v *Vm) readUint16() code.Index {

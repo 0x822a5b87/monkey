@@ -367,7 +367,7 @@ func TestLetStatement(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpSetGlobal, 0),
-				code.Make(code.OpConstant, 1),
+				code.Make(code.OpClosure, 1, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -388,7 +388,7 @@ fn() {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 1),
+				code.Make(code.OpClosure, 1, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -415,7 +415,7 @@ fn() {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 2),
+				code.Make(code.OpClosure, 2, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -573,7 +573,7 @@ func TestFunctions(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 2),
+				code.Make(code.OpClosure, 2, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -585,7 +585,7 @@ func TestFunctions(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 0),
+				code.Make(code.OpClosure, 0, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -599,7 +599,7 @@ func TestFunctions(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 1),
+				code.Make(code.OpClosure, 1, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -612,12 +612,12 @@ func TestFunctions(t *testing.T) {
 					code.Make(code.OpReturnValue),
 				},
 				[]code.Instructions{
-					code.Make(code.OpConstant, 1),
+					code.Make(code.OpClosure, 1, 0),
 					code.Make(code.OpReturnValue),
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 2),
+				code.Make(code.OpClosure, 2, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -634,7 +634,7 @@ func TestFunctions(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 2),
+				code.Make(code.OpClosure, 2, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -655,7 +655,7 @@ func TestFunctionCall(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 0),
+				code.Make(code.OpClosure, 0, 0),
 				code.Make(code.OpCall, 0),
 				code.Make(code.OpPop),
 			},
@@ -673,7 +673,7 @@ func TestFunctionCall(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 2),
+				code.Make(code.OpClosure, 2, 0),
 				code.Make(code.OpCall, 0),
 				code.Make(code.OpPop),
 			},
@@ -691,11 +691,11 @@ func TestFunctionCall(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 1),  // the compiled function
-				code.Make(code.OpSetGlobal, 0), // insert compiled function to global store
-				code.Make(code.OpGetGlobal, 0), // retrieve compiled function from global store
-				code.Make(code.OpCall, 0),      // call function
-				code.Make(code.OpPop),          // pop value
+				code.Make(code.OpClosure, 1, 0), // the compiled function
+				code.Make(code.OpSetGlobal, 0),  // insert compiled function to global store
+				code.Make(code.OpGetGlobal, 0),  // retrieve compiled function from global store
+				code.Make(code.OpCall, 0),       // call function
+				code.Make(code.OpPop),           // pop value
 			},
 		},
 		{
@@ -713,7 +713,7 @@ func TestFunctionCall(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 2),
+				code.Make(code.OpClosure, 2, 0),
 				code.Make(code.OpSetGlobal, 0),
 			},
 		},
@@ -729,7 +729,7 @@ oneArg(65535)
 				65535,
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 0),
+				code.Make(code.OpClosure, 0, 0),
 				code.Make(code.OpSetGlobal, 0),
 
 				code.Make(code.OpGetGlobal, 0),
@@ -751,7 +751,7 @@ oneArg(65535)
 				24,
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 0),
+				code.Make(code.OpClosure, 0, 0),
 				code.Make(code.OpSetGlobal, 0),
 				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpConstant, 1),
@@ -774,7 +774,7 @@ manyArg(24, 25, 26);
 			},
 			expectedInstructions: []code.Instructions{
 				// pushing the function retrieved from constant pool onto the stack
-				code.Make(code.OpConstant, 0),
+				code.Make(code.OpClosure, 0, 0),
 				// binding the topmost object we just retrieved from constant pool to global variable
 				code.Make(code.OpSetGlobal, 0),
 
@@ -794,8 +794,157 @@ manyArg(24, 25, 26);
 	}
 }
 
-func TestFunctionCalls(t *testing.T) {
-	tests := []compilerTestCase{}
+func TestClosures(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `
+		fn(a) {
+			fn(b) {
+				a + b;
+			}
+		}
+		`,
+			expectedConstants: []any{
+				[]code.Instructions{
+					code.Make(code.OpGetFree, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 0),
+					// create a Closure
+					// first  operand specifies the constant index where we can find the CompiledFunction
+					// second operand specifies the number of free variables
+					code.Make(code.OpClosure, 0, 1),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				// We treat a common function as a closure with no free variables.
+				code.Make(code.OpClosure, 1, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			// Here we have three nested functions. The innermost function, the one with
+			// the c parameter, references two free variables: 'a' and 'b'. 'b' is defined in the
+			// immediate enclosing scope, but 'a' is defined in the outermost function, two
+			// scopes removed.
+			//
+			// The middle function is expected to contain an OpClosure instruction that
+			// turns the innermost function into a closure. Since the second operand is 2,
+			// there are supposed to be two free variables sitting on the stack when the
+			// VM executes it. What’s curious is how these values are being put on to the
+			// stack: an OpGetLocal instruction for the 'b' and – this is the interesting bit –
+			// an OpGetFree instruction for the outer 'a'
+			//
+			// Why OpGetFree? Because from the perspective of the middle function, 'a' is
+			// also a free variable: neither defined in scope nor as a parameter. And since
+			// it needs to get 'a' on to the stack, so it can be transferred to the innermost
+			// function’s Free field, we expect an OpGetFree instruction.
+			input: `
+		fn(a) {
+			fn(b) {
+				fn(c) {
+					a + b + c
+				}
+			}
+		}
+		`,
+			expectedConstants: []any{
+				[]code.Instructions{
+					code.Make(code.OpGetFree, 0),
+					code.Make(code.OpGetFree, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+				[]code.Instructions{
+					// an OpGetFree instruction for the outer a
+					// because from the perspective of the middle function, `a` is also a free variable.
+					code.Make(code.OpGetFree, 0),
+					// an OpGetLocal instruction for the local variable b
+					code.Make(code.OpGetLocal, 0),
+					// both 'a' and 'b' are free variables, the instruction turns the innermost function into a closure.
+					code.Make(code.OpClosure, 0, 2),
+					code.Make(code.OpReturnValue),
+				},
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpClosure, 1, 1),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 2, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+		let global = 55;
+		
+		fn() {
+			let a = 66;
+		
+			fn() {
+				let b = 77;
+		
+				fn() {
+					let c = 88;
+		
+					global + a + b + c;
+				}
+			}
+		}
+		`,
+			expectedConstants: []any{
+				55,
+				66,
+				77,
+				88,
+				[]code.Instructions{
+					// innermost function
+					code.Make(code.OpConstant, 3),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpGetFree, 0),
+					code.Make(code.OpAdd),
+					code.Make(code.OpGetFree, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+				[]code.Instructions{
+					// middle function
+					code.Make(code.OpConstant, 2),
+					code.Make(code.OpSetLocal, 0),
+					// prepare free variables on stack before OpClosure instruction
+					code.Make(code.OpGetFree, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpClosure, 4, 2),
+					code.Make(code.OpReturnValue),
+				},
+				[]code.Instructions{
+					// outer function
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpClosure, 5, 1),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpClosure, 6, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
 
 	for i, testCase := range tests {
 		runCompilerTest(t, i, &testCase)
@@ -926,7 +1075,7 @@ fn() {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 0),
+				code.Make(code.OpClosure, 0, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -983,14 +1132,14 @@ func testInstructions(t *testing.T, caseIndex int, expectedInstructions []code.I
 	}
 }
 
-func testCompiledFunction(t *testing.T, caseIndex int, expected []code.Instructions, actual object.Object) {
+func testClosure(t *testing.T, caseIndex int, expected []code.Instructions, actual object.Object) {
 	t.Helper()
-	compiledFn, ok := actual.(*code.CompiledFunction)
+	closure, ok := actual.(*code.Closure)
 	if !ok {
 		t.Errorf("case %d type error\nexpect=%s\nactual=%s", caseIndex, code.ObjCompiledFunction, actual.Type())
 		return
 	}
-	testInstructions(t, caseIndex, expected, compiledFn.Instructions)
+	testInstructions(t, caseIndex, expected, closure.Fn.Instructions)
 }
 
 func testConstants(t *testing.T, caseIndex int, expectedConstants []interface{}, constants *code.Constants) {
@@ -1005,7 +1154,7 @@ func testConstants(t *testing.T, caseIndex int, expectedConstants []interface{},
 		case string:
 			testStringObject(t, caseIndex, constants.GetConstant(code.Index(i)), expected)
 		case []code.Instructions:
-			testCompiledFunction(t, caseIndex, expected, constants.GetConstant(code.Index(i)))
+			testClosure(t, caseIndex, expected, constants.GetConstant(code.Index(i)))
 		}
 	}
 }

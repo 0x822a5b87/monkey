@@ -685,9 +685,20 @@ class stackPointer front
 class functionPointer front
 ```
 
+### Closures
 
+Closures in summary:
 
+1. detect references to free variables while compiling a function
+2. get the referenced values on to the stack
+3. **merge the values and the compiled function into a closure and leave it on the stack where it can then be called.**
 
+More specifically, closure invovles two relative instructions:
+
+| instruction | operands | description                                                  |
+| ----------- | -------- | ------------------------------------------------------------ |
+| OpClosure   | 2        | 1. The first operand is the constant index, it specifies where in the constant pool we can find the CompiledFunction that's to be converted into a closure.\n2. The second operand, it specifies how many free variables sit on the stackand to be translated to about-to-be-created closure. |
+| OpGetFree   | 1        | index of free variable in the the closure field              |
 
 
 

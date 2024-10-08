@@ -330,15 +330,7 @@ func (c *Compiler) compileFnLiteral(literal *ast.FnLiteral) error {
 
 	c.completeOpReturn(literal)
 
-	numDefinitions := c.symbolTable.numDefinitions
-	fnInstructions := c.exitScope()
-	fnCompiled := &code.CompiledFunction{
-		Instructions:   fnInstructions,
-		NumOfLocalVars: numDefinitions,
-	}
-	index := c.constants.AddConstant(fnCompiled).IntValue()
-	c.emit(code.OpConstant, index)
-	return nil
+	return c.genClosure()
 }
 
 func (c *Compiler) compileCallExpression(call *ast.CallExpression) error {
@@ -496,6 +488,33 @@ func (c *Compiler) completeOpReturn(literal *ast.FnLiteral) {
 	c.emit(code.OpReturnValue)
 }
 
+func (c *Compiler) genClosure() error {
+	subSymbolTable := c.symbolTable
+	fnInstructions := c.exitScope()
+
+	fnCompiled := &code.CompiledFunction{
+		Instructions:   fnInstructions,
+		NumOfLocalVars: subSymbolTable.numDefinitions,
+	}
+
+	// the closure is inside another function
+	closure := &code.Closure{
+		Fn: fnCompiled,
+		// TODO add num of free variables
+		Free: make([]object.Object, subSymbolTable.numFree),
+	}
+
+	for _, s := range subSymbolTable.Free {
+		c.emitGetScope(s)
+	}
+
+	index := c.constants.AddConstant(closure).IntValue()
+	// TODO add number of free variables
+	c.emit(code.OpClosure, index, subSymbolTable.numFree)
+
+	return nil
+}
+
 func (c *Compiler) emitGetScope(symbol Symbol) {
 	switch symbol.Scope {
 	case GlobalScope:
@@ -504,6 +523,8 @@ func (c *Compiler) emitGetScope(symbol Symbol) {
 		c.emit(code.OpGetLocal, symbol.Index)
 	case BuiltInScope:
 		c.emit(code.OpGetBuiltIn, symbol.Index)
+	case FreeScope:
+		c.emit(code.OpGetFree, symbol.Index)
 	default:
 		panic(common.NewUnknownScope(symbol.Name))
 	}

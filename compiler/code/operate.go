@@ -60,7 +60,7 @@ func ReadOperands(def *Definition, instruction []byte) (operands []int, readByte
 		readBytes += width
 		switch width {
 		case 1:
-			operands[start] = ReadUint8(instruction[start:]).IntValue()
+			operands[i] = ReadUint8(instruction[start:]).IntValue()
 		case 2:
 			operands[i] = ReadUint16(instruction[start:readBytes]).IntValue()
 		default:

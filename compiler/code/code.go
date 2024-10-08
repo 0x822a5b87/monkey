@@ -86,6 +86,33 @@ const (
 	OpGetLocal
 	OpSetBuiltIn
 	OpGetBuiltIn
+	// OpClosure convert a function into a closure, contains two operands
+	// 1. The first operand is the constant index, it specifies where in the constant pool
+	// we can find the CompiledFunction that's to be converted into a closure.
+	// 2. The second operand, it specifies how many free variables sit on the stack
+	// and to be translated to about-to-be-created closure.
+	// OpClosure instruction is typically used in combination with OpGetFree and OpGetLocal to create a real Closure:
+	// Before we emit an OpClosure instruction, we prepare the free variables on the stack using these instructions like this:
+	// OpGetFree  0
+	// OpGetLocal 0
+	// OpClosure  0, 2
+	//
+	// Here is another example to illustrate Closure, assume we have a code snippet :
+	// fn outer(a) {
+	//     fn middle(b) {
+	//          fn inner(c) {
+	//              a + b + c
+	//          }
+	//     }
+	// }
+	// The instruction for the outer function is Make(OpClosure, 1, 1).
+	// The first operand specifies its constant index as 1, and the second operand specifies that it contains 1 free variable, which is 'b'.
+	// The instruction for the middle function is Make(OpClosure, 0, 2).
+	// The first operand specifies its constant index as 0, and the second operand specifies that it contains 2 free variables, which are 'a' and 'b'.
+	// The instruction for the inner function does not have OpClosure.
+	OpClosure
+	// OpGetFree retrieve the values in the free field and put them on the stack.
+	OpGetFree
 )
 
 var definitions = map[Opcode]*Definition{
@@ -129,6 +156,8 @@ var definitions = map[Opcode]*Definition{
 	OpGetLocal:      {"OpGetLocal", "", []int{1}},
 	OpSetBuiltIn:    {"OpSetBuiltIn", "", []int{1}},
 	OpGetBuiltIn:    {"OpGetBuiltIn", "", []int{1}},
+	OpClosure:       {"OpClosure", "", []int{2, 1}},
+	OpGetFree:       {"OpGetFree", "", []int{1}},
 }
 
 // Instructions the instructions are a series of bytes and a single instruction

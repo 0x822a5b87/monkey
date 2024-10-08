@@ -7,7 +7,7 @@ import "0x822a5b87/monkey/compiler/code"
 // fn points to the compiled function referenced by the frame.
 // ip is the instruction pointer in this frame, for the function.
 type Frame struct {
-	fn *code.CompiledFunction
+	fn *code.Closure
 	// ip means instruction pointer, we iterate through instructions by incrementing it.
 	// Then fetch the current instruction by directly accessing instructions.
 	ip int
@@ -15,7 +15,7 @@ type Frame struct {
 	basePointer int
 }
 
-func NewFrame(f *code.CompiledFunction, stackPointer int) *Frame {
+func NewFrame(f *code.Closure, stackPointer int) *Frame {
 	return &Frame{
 		fn:          f,
 		ip:          0,
@@ -24,5 +24,5 @@ func NewFrame(f *code.CompiledFunction, stackPointer int) *Frame {
 }
 
 func (f *Frame) Instructions() code.Instructions {
-	return f.fn.Instructions
+	return f.fn.Fn.Instructions
 }
