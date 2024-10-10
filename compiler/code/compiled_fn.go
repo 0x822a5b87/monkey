@@ -41,5 +41,5 @@ func (c *Closure) Inspect() string {
 	for _, o := range c.Free {
 		objs = append(objs, o.Inspect())
 	}
-	return fmt.Sprintf("Closure [%s], Free [%s]", c.Inspect(), strings.Join(objs, ","))
+	return fmt.Sprintf("Closure [%s], Free [%s]", c.Fn.Inspect(), strings.Join(objs, ","))
 }
